@@ -85,11 +85,19 @@
         <div class="section-head">
           <h2>Your games</h2>
           <div class="row">
+            <button type="button" id="check-all" class="btn ghost" title="Re-read every game's map data from its site and report new, removed and renamed locations">Check for new locations</button>
             <button type="button" id="export-all" class="btn ghost" title="Collected markers, notes and your own markers for every game, in one file">Export all progress</button>
             <button type="button" id="import-all" class="btn ghost">Import</button>
           </div>
         </div>
-        <p id="lib-empty" class="empty hidden">No games yet. Paste a game's map link above to add one.</p>
+        <div id="lib-empty" class="empty hidden">
+          <h3>Add your first game</h3>
+          <ol class="guide">
+            <li>Open the game's interactive map in your browser and copy the page link — it looks like <code>https://…/the-game</code> or <code>https://…/the-game/maps/world</code>.</li>
+            <li>Paste it above and press <strong>Look up</strong>. Pick the maps you want and whether to download the map tiles and screenshots for offline use.</li>
+            <li>Open a map: click a marker for details, right-click it to mark it collected, right-click empty ground to add your own. Progress stays on this computer and is backed up automatically.</li>
+          </ol>
+        </div>
         <div id="game-list" class="cards"></div>
       </section>
     </div>
@@ -124,6 +132,7 @@
           <label class="chip"><input type="checkbox" id="hide-collected"><span>Hide collected</span></label>
           <label class="chip"><input type="checkbox" id="cluster-markers" checked><span>Cluster</span></label>
           <label class="chip" id="region-outlines-label"><input type="checkbox" id="region-outlines" checked><span>Regions</span></label>
+          <label class="chip" id="show-titles-label" title="Show location names next to the pins when zoomed in"><input type="checkbox" id="show-titles" checked><span>Titles</span></label>
         </div>
         <div class="row">
           <select id="region-filter" title="Show one region only"><option value="">All regions</option></select>
@@ -132,10 +141,11 @@
         </div>
         <div class="row between small muted list-tools">
           <span id="visible-count"></span>
-          <span><button type="button" id="show-all" class="link">Show all</button> · <button type="button" id="hide-all" class="link">Hide all</button></span>
+          <span><button type="button" id="whats-left" class="link" title="Everything still to collect, by region">What's left</button> · <button type="button" id="show-all" class="link">Show all</button> · <button type="button" id="hide-all" class="link">Hide all</button></span>
         </div>
       </section>
 
+      <div id="whats-left-panel" class="hidden"></div>
       <div id="search-results" class="hidden"></div>
       <nav id="categories" aria-label="Category filters"></nav>
 

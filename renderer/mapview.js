@@ -17,6 +17,7 @@ window.MapView = (() => {
     back: $('back-library'), gameTitle: $('game-title'), mapSelect: $('map-select'), mapTitle: $('map-title'),
     progressText: $('progress-text'), progressPct: $('progress-pct'), progressFill: $('progress-fill'), progressNote: $('progress-note'),
     regionFilter: $('region-filter'), nextBtn: $('next-uncollected'),
+    titles: $('show-titles'), leftBtn: $('whats-left'), leftPanel: $('whats-left-panel'),
     search: $('search'), hideCollected: $('hide-collected'), showAll: $('show-all'), hideAll: $('hide-all'),
     cluster: $('cluster-markers'), regions: $('region-outlines'), regionsLabel: $('region-outlines-label'),
     visibleCount: $('visible-count'), categories: $('categories'), results: $('search-results'),
@@ -83,6 +84,19 @@ window.MapView = (() => {
     el.cluster.addEventListener('change', () => view && view.setClustering(el.cluster.checked));
     el.regions.addEventListener('change', () => view && view.setRegions(el.regions.checked));
     el.regionFilter.addEventListener('change', () => view && view.setRegionFilter(el.regionFilter.value));
+    el.titles.addEventListener('change', () => view && view.setTitles(el.titles.checked));
+    el.leftBtn.addEventListener('click', () => view && view.toggleWhatsLeft());
+    el.leftPanel.addEventListener('click', (e) => {
+      if (!view) return;
+      const item = e.target.closest('[data-id]');
+      const collect = e.target.closest('[data-collect-region]');
+      const action = e.target.closest('[data-left]');
+      if (item) view.focus(item.dataset.id);
+      else if (collect) view.collectRegion(collect.dataset.collectRegion);
+      else if (action && action.dataset.left === 'copy') view.copyLeft();
+      else if (action && action.dataset.left === 'save') view.saveLeft();
+      else if (action && action.dataset.left === 'close') view.toggleWhatsLeft(false);
+    });
     el.nextBtn.addEventListener('click', () => view && view.nextUncollected());
     el.progressNote.addEventListener('click', (e) => { if (e.target.closest('[data-track-all]') && view) view.trackAll(); });
     document.addEventListener('keydown', (e) => {
@@ -168,6 +182,7 @@ window.MapView = (() => {
       regions: !!(await get('regions', true)),
       tracked: await get('trackedCategories', null), // null = every category counts toward progress
       region: await get('regionFilter', null),
+      titles: !!(await get('titles', true)),
       view: await get('view', null),
       search: '',
     };
@@ -191,6 +206,7 @@ window.MapView = (() => {
       regions: () => store.setItem('regions', state.regions),
       tracked: () => store.setItem('trackedCategories', state.tracked),
       region: () => store.setItem('regionFilter', state.region),
+      titles: () => store.setItem('titles', state.titles),
       view: () => store.setItem('view', state.view),
     };
     const isTracked = (categoryId) => categoryId !== CUSTOM && (!state.tracked || state.tracked.includes(categoryId));
@@ -215,6 +231,7 @@ window.MapView = (() => {
     el.hideCollected.checked = state.hideCollected;
     el.cluster.checked = state.cluster;
     el.regions.checked = state.regions;
+    el.titles.checked = state.titles;
     // region filter: only regions that actually have markers
     const regionCounts = new Map();
     for (const m of data.markers) if (m.regionId != null) regionCounts.set(m.regionId, (regionCounts.get(m.regionId) || 0) + 1);
@@ -360,14 +377,26 @@ window.MapView = (() => {
     // ---------- markers ----------
     const entries = new Map(); // id -> { data, category, marker }
     const markerIds = new WeakMap(); // L.Marker -> id (for cluster icons)
+    const labeled = new Set(); // entries currently showing their title next to the pin
+    const hoverTooltip = (marker, title) => marker.bindTooltip(title || 'My marker', { direction: 'top', opacity: 0.95 });
     function makeEntry(m, category) {
-      const marker = L.marker([m.y, m.x], { icon: iconFor(category, isCollected(m.id)), riseOnHover: true, keyboard: false });
-      marker.bindTooltip(m.title || 'My marker', { direction: 'top', opacity: 0.95 });
+      const custom = category.id === CUSTOM;
+      const marker = L.marker([m.y, m.x], { icon: iconFor(category, isCollected(m.id)), riseOnHover: true, keyboard: false, draggable: custom });
+      hoverTooltip(marker, m.title);
       marker.bindPopup(() => popupHtml(m), { maxWidth: 380, minWidth: 260, className: 'mg-popup', autoPanPadding: [40, 40] });
       marker.on('contextmenu', (e) => { if (e.originalEvent) { e.originalEvent.preventDefault(); e.originalEvent.stopPropagation(); } toggleCollected(m.id); });
-      marker.on('popupopen', () => marker.closeTooltip()); // Leaflet also opens the tooltip on click
-      markerIds.set(marker, m.id);
       const entry = { data: m, category, marker };
+      marker.on('popupopen', () => { if (!labeled.has(entry)) marker.closeTooltip(); }); // Leaflet also opens the tooltip on click
+      if (custom) {
+        marker.on('dragend', () => {
+          const ll = marker.getLatLng();
+          m.x = Math.round(ll.lng);
+          m.y = Math.round(ll.lat);
+          persist.custom();
+          if (marker.isPopupOpen()) marker.getPopup().setContent(popupHtml(m));
+        });
+      }
+      markerIds.set(marker, m.id);
       entries.set(m.id, entry);
       return entry;
     }
@@ -405,9 +434,22 @@ window.MapView = (() => {
       return L.featureGroup();
     }
     let group = makeGroup(state.cluster).addTo(map);
-    const onMap = new Set(); // entries currently in the group
-    function groupAdd(layers) { if (!layers.length) return; if (group.addLayers) group.addLayers(layers); else for (const l of layers) group.addLayer(l); }
-    function groupRemove(layers) { if (!layers.length) return; if (group.removeLayers) group.removeLayers(layers); else for (const l of layers) group.removeLayer(l); }
+    const customGroup = L.featureGroup().addTo(map); // your own markers: never clustered, draggable
+    const onMap = new Set(); // entries currently on the map (either group)
+    const isCustomEntry = (entry) => entry.category.id === CUSTOM;
+    function placeEntries(list, on) {
+      const site = list.filter((e) => !isCustomEntry(e)).map((e) => e.marker);
+      const custom = list.filter(isCustomEntry).map((e) => e.marker);
+      if (on) {
+        if (site.length) { if (group.addLayers) group.addLayers(site); else for (const l of site) group.addLayer(l); }
+        for (const l of custom) customGroup.addLayer(l);
+      } else {
+        for (const e of list) if (labeled.has(e)) { e.marker.unbindTooltip(); hoverTooltip(e.marker, e.data.title); labeled.delete(e); }
+        if (site.length) { if (group.removeLayers) group.removeLayers(site); else for (const l of site) group.removeLayer(l); }
+        for (const l of custom) customGroup.removeLayer(l);
+      }
+    }
+    const groupAdd = (layers) => { /* kept for clustering swaps */ if (group.addLayers) group.addLayers(layers); else for (const l of layers) group.addLayer(l); };
 
     function matchesSearch(entry) {
       if (!state.search) return true;
@@ -442,23 +484,47 @@ window.MapView = (() => {
       for (const entry of entries.values()) {
         const visible = isVisible(entry);
         const has = onMap.has(entry);
-        if (visible && !has) { add.push(entry.marker); onMap.add(entry); }
-        else if (!visible && has) { remove.push(entry.marker); onMap.delete(entry); }
+        if (visible && !has) { add.push(entry); onMap.add(entry); }
+        else if (!visible && has) { remove.push(entry); onMap.delete(entry); }
         if (visible) shown++;
       }
-      groupRemove(remove);
-      groupAdd(add);
+      placeEntries(remove, false);
+      placeEntries(add, true);
       el.visibleCount.textContent = `${shown} of ${entries.size} shown`;
+      updateTitles();
+      if (leftOpen) renderLeft();
     }
     function setClustering(on) {
       state.cluster = !!on;
       persist.cluster();
-      const layers = [...onMap].map((e) => e.marker);
+      const layers = [...onMap].filter((e) => !isCustomEntry(e)).map((e) => e.marker);
       map.closePopup();
       map.removeLayer(group);
       group = makeGroup(state.cluster).addTo(map);
       groupAdd(layers);
+      updateTitles();
     }
+
+    // ---------- location titles next to the pins when zoomed in ----------
+    function updateTitles() {
+      const show = state.titles && map.getZoom() >= T.nativeMaxZoom - 1;
+      const bounds = map.getBounds().pad(0.15);
+      for (const entry of onMap) {
+        const want = show && !!entry.marker._icon && bounds.contains(entry.marker.getLatLng());
+        const has = labeled.has(entry);
+        if (want && !has) {
+          entry.marker.unbindTooltip();
+          entry.marker.bindTooltip(entry.data.title || 'My marker', { permanent: true, direction: 'right', offset: [10, 0], className: 'pin-label', interactive: false });
+          labeled.add(entry);
+        } else if (!want && has) {
+          entry.marker.unbindTooltip();
+          hoverTooltip(entry.marker, entry.data.title);
+          labeled.delete(entry);
+        }
+      }
+    }
+    map.on('zoomend moveend', debounce(updateTitles, 120));
+    function setTitles(on) { state.titles = !!on; persist.titles(); updateTitles(); }
     function setRegions(on) {
       state.regions = !!on;
       persist.regions();
@@ -468,7 +534,7 @@ window.MapView = (() => {
     function refreshEntry(entry) {
       entry.marker.setIcon(iconFor(entry.category, isCollected(entry.data.id)));
       if (entry.marker.isPopupOpen()) entry.marker.getPopup().setContent(popupHtml(entry.data));
-      if (group.refreshClusters && onMap.has(entry)) group.refreshClusters(entry.marker);
+      if (group.refreshClusters && onMap.has(entry) && !isCustomEntry(entry)) group.refreshClusters(entry.marker);
     }
     function toggleCollected(id) {
       const entry = entries.get(id);
@@ -480,6 +546,7 @@ window.MapView = (() => {
       renderProgress();
       if (state.hideCollected) applyFilters();
       if (state.search) renderResults();
+      if (leftOpen) renderLeft();
     }
     function focusMarker(id) {
       const entry = entries.get(id);
@@ -498,7 +565,7 @@ window.MapView = (() => {
         if (opened) return;
         opened = true;
         whenSettled(() => {
-          if (entry.marker._icon || !group.zoomToShowLayer || !onMap.has(entry)) entry.marker.openPopup();
+          if (entry.marker._icon || !group.zoomToShowLayer || !onMap.has(entry) || isCustomEntry(entry)) entry.marker.openPopup();
           else group.zoomToShowLayer(entry.marker, () => entry.marker.openPopup());
         });
       };
@@ -524,7 +591,7 @@ window.MapView = (() => {
       persist.custom();
       const entry = makeEntry(c, customCategory);
       map.closePopup();
-      if (isVisible(entry)) { onMap.add(entry); groupAdd([entry.marker]); }
+      if (isVisible(entry)) { onMap.add(entry); placeEntries([entry], true); }
       renderCounts();
       el.visibleCount.textContent = `${onMap.size} of ${entries.size} shown`;
       setTimeout(() => {
@@ -538,7 +605,7 @@ window.MapView = (() => {
       if (!entry) return;
       if (!window.confirm(`Delete "${entry.data.title || 'My marker'}"?`)) return;
       map.closePopup();
-      if (onMap.has(entry)) { groupRemove([entry.marker]); onMap.delete(entry); }
+      if (onMap.has(entry)) { placeEntries([entry], false); onMap.delete(entry); }
       entries.delete(id);
       state.custom = state.custom.filter((c) => c.id !== id);
       delete state.collected[id];
@@ -551,15 +618,92 @@ window.MapView = (() => {
     const persistNotesSoon = debounce(() => persist.notes(), 400);
     const persistCustomSoon = debounce(() => persist.custom(), 400);
 
+    // ---------- sidebar panels: categories, search results, what's left ----------
+    let leftOpen = false;
+    function syncPanels() {
+      const which = state.search ? 'results' : (leftOpen ? 'left' : 'categories');
+      el.results.classList.toggle('hidden', which !== 'results');
+      el.leftPanel.classList.toggle('hidden', which !== 'left');
+      el.categories.classList.toggle('hidden', which !== 'categories');
+      el.leftBtn.classList.toggle('active', leftOpen);
+    }
+    function leftData() {
+      const groups = new Map();
+      for (const entry of entries.values()) {
+        if (isCustomEntry(entry) || !isTracked(entry.data.categoryId) || isCollected(entry.data.id) || !isVisible(entry)) continue;
+        const r = regionsById.get(entry.data.regionId);
+        const key = r ? String(r.id) : 'none';
+        if (!groups.has(key)) groups.set(key, { key, title: r ? r.title : 'No region', items: [] });
+        groups.get(key).items.push(entry);
+      }
+      const list = [...groups.values()].sort((a, b) => b.items.length - a.items.length || a.title.localeCompare(b.title));
+      for (const g of list) g.items.sort((a, b) => a.category.title.localeCompare(b.category.title) || String(a.data.title).localeCompare(String(b.data.title)));
+      return list;
+    }
+    function renderLeft() {
+      const list = leftData();
+      const total = list.reduce((s, g) => s + g.items.length, 0);
+      const sections = list.map((g) => {
+        let lastCat = null;
+        const items = g.items.map((e) => {
+          const head = e.category.id !== lastCat ? `<li class="left-cat">${esc(e.category.title)}</li>` : '';
+          lastCat = e.category.id;
+          const sub = (state.notes[e.data.id] || e.data.description || '').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\*\*?/g, '').replace(/\s+/g, ' ').trim().slice(0, 80);
+          return `${head}<li class="left-item" data-id="${esc(e.data.id)}"><span class="left-text"><span class="left-title">${esc(e.data.title)}</span>${sub ? `<span class="left-sub">${esc(sub)}</span>` : ''}</span>${state.notes[e.data.id] ? '<span class="muted" title="has a note">✎</span>' : ''}</li>`;
+        }).join('');
+        return `
+          <section class="left-region">
+            <header class="left-head"><span class="left-region-title">${esc(g.title)}</span><span class="count">${g.items.length}</span><button type="button" class="link" data-collect-region="${esc(g.key)}" title="Mark every listed location in this region as collected">mark all</button></header>
+            <ul>${items}</ul>
+          </section>`;
+      }).join('');
+      el.leftPanel.innerHTML = `
+        <div class="left-toolbar">
+          <strong>${total} left</strong><span class="muted small">${state.tracked || state.hidden.size || state.region != null ? ' in the current filters' : ''}</span>
+          <span class="spacer"></span>
+          <button type="button" class="link" data-left="copy" title="Copy the list as text">Copy</button>
+          <button type="button" class="link" data-left="save" title="Save the list as a text file">Save…</button>
+          <button type="button" class="link" data-left="close">Close</button>
+        </div>
+        ${total ? sections : '<div class="empty-note">Nothing left here — everything counted is collected.</div>'}`;
+    }
+    function leftText() {
+      const lines = [`What's left — ${game.title} / ${data.map.title}`, ''];
+      for (const g of leftData()) {
+        lines.push(`## ${g.title} (${g.items.length})`);
+        for (const e of g.items) lines.push(`- [ ] ${e.category.title}: ${e.data.title}`);
+        lines.push('');
+      }
+      return lines.join('\n');
+    }
+    function toggleWhatsLeft(force) {
+      leftOpen = force === undefined ? !leftOpen : !!force;
+      if (leftOpen && state.search) { state.search = ''; el.search.value = ''; applyFilters(); }
+      if (leftOpen) renderLeft();
+      syncPanels();
+    }
+    function collectRegion(key) {
+      const g = leftData().find((x) => x.key === key);
+      if (!g) return;
+      if (!window.confirm(`Mark all ${g.items.length} listed locations in "${g.title}" as collected?`)) return;
+      const stamp = new Date().toISOString();
+      for (const e of g.items) state.collected[e.data.id] = stamp;
+      persist.collected();
+      for (const e of g.items) refreshEntry(e);
+      renderProgress();
+      if (state.hideCollected) applyFilters();
+      renderLeft();
+      toast(`${g.items.length} marked as collected`);
+    }
+
     // ---------- search results ----------
     let firstResultId = null;
     const RESULT_LIMIT = 300;
     function renderResults() {
       if (!state.search) {
         el.results.innerHTML = '';
-        el.results.classList.add('hidden');
-        el.categories.classList.remove('hidden');
         firstResultId = null;
+        syncPanels();
         return;
       }
       const matches = [...entries.values()].filter(matchesSearch).sort((a, b) => String(a.data.title).localeCompare(String(b.data.title)));
@@ -574,8 +718,7 @@ window.MapView = (() => {
         </li>`;
       }).join('');
       el.results.innerHTML = `<div class="results-head">${matches.length} match${matches.length === 1 ? '' : 'es'}${matches.length > RESULT_LIMIT ? ` · showing the first ${RESULT_LIMIT}` : ''} · Enter jumps to the first</div><ul>${items}</ul>`;
-      el.results.classList.remove('hidden');
-      el.categories.classList.add('hidden');
+      syncPanels();
     }
 
     // ---------- popup ----------
@@ -644,8 +787,9 @@ window.MapView = (() => {
       persist.tracked();
       syncTrackUI();
       renderProgress();
+      if (leftOpen) renderLeft();
     }
-    function trackAll() { state.tracked = null; persist.tracked(); syncTrackUI(); renderProgress(); }
+    function trackAll() { state.tracked = null; persist.tracked(); syncTrackUI(); renderProgress(); if (leftOpen) renderLeft(); }
     function renderCategories() {
       const sections = [`
         <section class="group custom-group">
@@ -743,12 +887,13 @@ window.MapView = (() => {
     renderCategories();
     renderProgress();
     applyFilters();
+    syncPanels();
     if (restoredFromBackup) toast('Progress restored from the backup file');
 
     // ---------- handlers used by the static wiring ----------
     return {
       source, gameSlug, mapSlug,
-      destroy() { flushBackup(); window.removeEventListener('beforeunload', flushBackup); map.remove(); openPopup = null; },
+      destroy() { flushBackup(); window.removeEventListener('beforeunload', flushBackup); map.remove(); openPopup = null; leftOpen = false; el.leftPanel.innerHTML = ''; el.leftBtn.classList.remove('active'); },
       focus: (id) => focusMarker(isCustomId(id) ? id : Number(id)),
       focusFirstResult() { if (firstResultId !== null) focusMarker(firstResultId); },
       onCategoryChange(e) {
@@ -771,6 +916,11 @@ window.MapView = (() => {
       setClustering,
       setRegions,
       setRegionFilter(value) { state.region = value === '' ? null : Number(value); persist.region(); applyFilters(); if (state.search) renderResults(); },
+      setTitles,
+      toggleWhatsLeft,
+      collectRegion,
+      async copyLeft() { try { await navigator.clipboard.writeText(leftText()); toast('List copied'); } catch { toast('Could not copy'); } },
+      async saveLeft() { const ok = await window.api.exportProgress(leftText(), `${gameSlug}-${mapSlug}-whats-left.txt`, 'text'); if (ok) toast('List saved'); },
       nextUncollected,
       toggleTracked,
       trackAll,

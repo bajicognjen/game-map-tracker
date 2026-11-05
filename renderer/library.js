@@ -8,7 +8,7 @@ window.Library = (() => {
     tiles: $('add-tiles'), zoom: $('add-zoom'), media: $('add-media'),
     progress: $('add-progress'), fill: $('add-fill'), log: $('add-log'),
     list: $('game-list'), empty: $('lib-empty'), version: $('app-version'), checkUpdates: $('check-updates'),
-    exportAll: $('export-all'), importAll: $('import-all'),
+    exportAll: $('export-all'), importAll: $('import-all'), checkAll: $('check-all'),
     openSettings: $('open-settings'), closeSettings: $('close-settings'), settingsPanel: $('settings-panel'),
     gamesDir: $('games-dir'), backupsDir: $('backups-dir'), settingsMove: $('settings-move'), settingsStatus: $('settings-status'),
     reportProblem: $('report-problem'),
@@ -64,7 +64,7 @@ window.Library = (() => {
       const cover = g.cover ? `gamemap://${esc(g.source)}/${esc(g.slug)}/${esc(g.cover)}` : '';
       cards.push(`
         <article class="card game-card" data-game="${esc(g.slug)}" data-source="${esc(g.source)}">
-          <div class="hero"${cover ? ` style="background-image:url('${cover}')"` : ''}>
+          <div class="hero${g.coverKind === 'logo' ? ' logo' : ''}"${cover ? ` style="background-image:url('${cover}')"` : ''}>
             ${g.source === 'bundled' ? '<span class="badge">bundled</span>' : ''}
             <h3 class="title">${esc(g.title)}</h3>
             <details class="menu">
@@ -183,6 +183,30 @@ window.Library = (() => {
     });
   }
 
+  async function runRefreshAll() {
+    if (!games.some((g) => g.source === 'user')) { toast('No games to check yet'); return; }
+    await withJob(async () => {
+      el.progress.classList.remove('hidden');
+      el.log.innerHTML = '';
+      el.fill.style.width = '0%';
+      const unsubscribe = window.api.onJobProgress((p) => { logLine(p.message, p.stage === 'done' ? 'ok' : ''); el.status.textContent = p.stage === 'done' ? '' : p.message; });
+      try {
+        const results = await window.api.refreshAllGames();
+        el.fill.style.width = '100%';
+        let added = 0;
+        for (const g of results) for (const m of g.maps || []) added += m.added || 0;
+        if (added) logLine(`${added} new location${added === 1 ? '' : 's'} in total. Run Update on a game to download their screenshots.`, 'hint');
+        toast(added ? `${added} new location${added === 1 ? '' : 's'} found` : 'No new locations');
+      } catch (err) {
+        const msg = ipcMessage(err);
+        logLine(msg === 'Cancelled' ? 'Cancelled' : `Failed: ${msg}`, 'error');
+      } finally {
+        unsubscribe();
+        await refresh();
+      }
+    });
+  }
+
   async function doAdd() {
     const maps = [...el.planMaps.querySelectorAll('.plan-map:checked')].map((i) => i.value);
     if (!maps.length) { toast('Pick at least one map'); return; }
@@ -272,6 +296,7 @@ window.Library = (() => {
       }
     });
     el.reportProblem.addEventListener('click', () => window.api.reportProblem());
+    el.checkAll.addEventListener('click', () => runRefreshAll());
     el.exportAll.addEventListener('click', () => exportAll().catch((err) => toast(ipcMessage(err))));
     el.importAll.addEventListener('click', () => importAll().catch((err) => toast(ipcMessage(err))));
     window.api.appInfo().then((info) => { el.version.textContent = `Version ${info.version}`; }).catch(() => {});

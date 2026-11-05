@@ -11,6 +11,7 @@ map site; please respect the terms of the site you use and keep the downloads to
 ![Library screen](docs/screenshot-library.jpg)
 ![Map with region outlines and clusters](docs/screenshot-map.jpg)
 ![Location popup with notes](docs/screenshot-popup.jpg)
+![What's left, with titles next to the pins](docs/screenshot-whatsleft.jpg)
 
 ## Download
 
@@ -64,7 +65,9 @@ packaged build; add `"games/**"` to `build.files` in `package.json` to include i
 and the progress backups folder, for example into a synced folder so another computer with the app restores
 the same progress. Each game card shows how much space its tiles and screenshots take, with *delete* links
 to free it while keeping the map data and your progress; an *Update* downloads them again. After an Update,
-the log says what changed on each map (new, removed and renamed locations).
+the log says what changed on each map (new, removed and renamed locations). **Check for new locations** on the
+Library screen re-reads every game's data (no tiles or screenshots) and reports the same per map; an Update
+then fetches screenshots for anything new. The window size and position are remembered between runs.
 
 ## Using a map
 
@@ -81,6 +84,10 @@ the log says what changed on each map (new, removed and renamed locations).
   within the current filters.
 - The **★** next to a category decides whether it counts toward the progress bar, so the bar can track
   just the collectibles you care about.
+- **What's left** (link above the category list) shows everything still to collect, grouped by region and
+  category, with a jump on click, *mark all* per region, and Copy / Save for a plain-text checklist.
+- **Titles** next to the pins appear when zoomed in close; the chip turns them off.
+- Your own markers can be dragged to a new spot.
 - Keyboard: `/` focuses search, `N` jumps to the next uncollected marker, `C` collects the marker whose popup
   is open, `Esc` closes it.
 - Nearby markers are grouped into **clusters** at lower zooms (green when everything in them is collected);
@@ -131,8 +138,9 @@ npm run test:e2e
 
 Drives the real app with Playwright against a small generated game (`test/fixture.mjs`), with no network:
 library, map, popup, collecting, tracked categories, the region filter, "next uncollected", keyboard
-shortcuts, notes, a custom marker, region outlines, a custom backups folder, persistence across restarts,
-restoring from the backup file and deleting offline tiles. It needs a display;
+shortcuts, notes, a draggable custom marker, region outlines, titles at high zoom, the what's-left list with
+bulk collect, a custom backups folder, the remembered window size, persistence across restarts, restoring
+from the backup file and deleting offline tiles. It needs a display;
 CI runs it on Linux (under `xvfb-run`), Windows and macOS on every push (`.github/workflows/ci.yml`).
 
 ## Layout

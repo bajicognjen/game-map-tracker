@@ -3,7 +3,7 @@
  * Electron main process: window, menu, the gamemap:// protocol that serves game assets from
  * the user-data folder, the IPC the sandboxed renderer uses, and update checks.
  */
-const { app, BrowserWindow, Menu, dialog, ipcMain, shell, protocol, net } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, shell, protocol, net, screen } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
@@ -40,10 +40,28 @@ function registerGameProtocol() {
 let mainWindow = null;
 const send = (channel, payload) => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload); };
 
+// Remember the window size and position between runs (settings.json "window").
+function savedBounds() {
+  const w = settings.load().window;
+  if (!w || !Number.isFinite(w.width) || !Number.isFinite(w.height)) return null;
+  const area = screen.getDisplayMatching({ x: w.x || 0, y: w.y || 0, width: w.width, height: w.height }).workArea;
+  const width = Math.min(Math.max(960, w.width), area.width);
+  const height = Math.min(Math.max(600, w.height), area.height);
+  const onScreen = Number.isFinite(w.x) && Number.isFinite(w.y) && w.x >= area.x - 50 && w.y >= area.y - 50 && w.x < area.x + area.width - 100 && w.y < area.y + area.height - 100;
+  return { width, height, ...(onScreen ? { x: w.x, y: w.y } : {}), maximized: !!w.maximized };
+}
+function rememberBounds(win) {
+  if (win.isDestroyed()) return;
+  const b = win.getNormalBounds();
+  settings.set({ window: { x: b.x, y: b.y, width: b.width, height: b.height, maximized: win.isMaximized() } });
+}
+
 function createWindow() {
+  const saved = savedBounds();
   mainWindow = new BrowserWindow({
-    width: 1440,
-    height: 900,
+    width: saved ? saved.width : 1440,
+    height: saved ? saved.height : 900,
+    ...(saved && saved.x !== undefined ? { x: saved.x, y: saved.y } : {}),
     minWidth: 960,
     minHeight: 600,
     title: 'Game Map Tracker',
@@ -62,6 +80,12 @@ function createWindow() {
     return { action: 'deny' };
   });
   mainWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  if (saved && saved.maximized) mainWindow.maximize();
+  let boundsTimer = null;
+  const onBoundsChange = () => { clearTimeout(boundsTimer); boundsTimer = setTimeout(() => rememberBounds(mainWindow), 400); };
+  mainWindow.on('resize', onBoundsChange);
+  mainWindow.on('move', onBoundsChange);
+  mainWindow.on('close', () => { clearTimeout(boundsTimer); rememberBounds(mainWindow); });
   mainWindow.on('closed', () => { mainWindow = null; });
   return mainWindow;
 }
@@ -227,6 +251,7 @@ const cleanOpts = (opts) => ({
 });
 ipcMain.handle('library:lookup', (event, input) => runJob(event, (onProgress, signal) => library.lookupGame(String(input || ''), onProgress, signal)));
 ipcMain.handle('library:add', (event, input, opts) => runJob(event, (onProgress, signal, shouldStop) => library.addGame(String(input || ''), { ...cleanOpts(opts), shouldStop }, onProgress, signal)));
+ipcMain.handle('library:refresh-all', (event) => runJob(event, (onProgress, signal) => library.refreshAllGames(onProgress, signal)));
 ipcMain.handle('library:cancel', () => { if (job) job.controller.abort(); return true; });
 ipcMain.handle('library:stop-tiles', () => { if (job) job.stopTiles = true; return true; });
 ipcMain.handle('library:remove', (event, slug) => library.removeGame(paths.assertSlug(slug, 'game slug')));
@@ -250,12 +275,13 @@ ipcMain.handle('update:check', () => { checkForUpdates(true); return true; });
 ipcMain.handle('update:download', () => { autoUpdater.downloadUpdate().catch(() => {}); return true; });
 ipcMain.handle('update:install', () => { autoUpdater.quitAndInstall(); return true; });
 
-ipcMain.handle('progress:export', async (event, json, suggestedName) => {
+ipcMain.handle('progress:export', async (event, json, suggestedName, kind) => {
   const win = BrowserWindow.fromWebContents(event.sender);
+  const text = kind === 'text';
   const { canceled, filePath } = await dialog.showSaveDialog(win, {
-    title: 'Export progress',
-    defaultPath: String(suggestedName || 'progress.json').replace(/[^\w.-]+/g, '-'),
-    filters: [{ name: 'JSON', extensions: ['json'] }],
+    title: text ? 'Save list' : 'Export progress',
+    defaultPath: String(suggestedName || (text ? 'list.txt' : 'progress.json')).replace(/[^\w.-]+/g, '-'),
+    filters: text ? [{ name: 'Text', extensions: ['txt', 'md'] }] : [{ name: 'JSON', extensions: ['json'] }],
   });
   if (canceled || !filePath) return false;
   fs.writeFileSync(filePath, String(json));

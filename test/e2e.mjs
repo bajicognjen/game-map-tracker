@@ -144,6 +144,35 @@ try {
   await page.waitForTimeout(800);
   c = await counts(page);
   check('custom marker created', c.custom === 1, JSON.stringify(c));
+
+  // the custom marker can be dragged to a new spot
+  const before = await page.evaluate(() => { const r = document.querySelector('.mg-pin.custom').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  await page.evaluate(() => document.querySelector('.leaflet-popup-close-button')?.click());
+  await page.mouse.move(before.x, before.y);
+  await page.mouse.down();
+  await page.mouse.move(before.x + 20, before.y + 15, { steps: 4 });
+  await page.mouse.move(before.x + 60, before.y + 45, { steps: 6 });
+  await page.mouse.up();
+  await page.waitForTimeout(500);
+  const after = await page.evaluate(() => { const r = document.querySelector('.mg-pin.custom').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  check('custom marker moved by dragging', Math.abs(after.x - before.x - 60) < 8 && Math.abs(after.y - before.y - 45) < 8, `moved ${Math.round(after.x - before.x)},${Math.round(after.y - before.y)}`);
+
+  // titles next to pins at high zoom, and the toggle
+  await page.evaluate(() => document.querySelector('.leaflet-control-zoom-in').click());
+  await page.waitForTimeout(500);
+  await page.evaluate(() => document.querySelector('.leaflet-control-zoom-in').click());
+  await page.waitForTimeout(900);
+  check('titles appear next to pins when zoomed in', (await page.evaluate(() => document.querySelectorAll('.pin-label').length)) > 0);
+  await page.evaluate(() => document.getElementById('show-titles').click());
+  await page.waitForTimeout(400);
+  check('titles toggle hides them', (await page.evaluate(() => document.querySelectorAll('.pin-label').length)) === 0);
+  await page.evaluate(() => document.getElementById('show-titles').click());
+  await page.evaluate(() => document.querySelector('.mg-home').click());
+  await page.waitForTimeout(500);
+
+  // the window size is remembered across runs
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setBounds({ width: 1180, height: 760 }));
+  await page.waitForTimeout(900);
   check('regions toggle hides the outline', await page.evaluate(async () => { document.getElementById('region-outlines').click(); await new Promise((r) => setTimeout(r, 300)); return document.querySelectorAll('.region-label').length === 0; }));
   check('no console errors in the first run', issues.length === 0, issues.slice(0, 3).join(' | '));
   await page.waitForTimeout(2000); // let the debounced backup land (closing the window flushes it too)
@@ -159,6 +188,8 @@ try {
   app = await launch();
   page = await app.firstWindow();
   attach(page, issues);
+  const bounds = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getBounds());
+  check('window size remembered', Math.abs(bounds.width - 1180) <= 16 && Math.abs(bounds.height - 760) <= 40, `${bounds.width}x${bounds.height}`);
   await openFixtureMap(page);
   c = await counts(page);
   check('collected progress persists', c.progress === '1 / 5 found', c.progress);
@@ -183,6 +214,18 @@ try {
   await openFixtureMap(page);
   c = await counts(page);
   check('progress restored from the backup file', c.progress === '1 / 5 found' && c.custom === 1, JSON.stringify(c));
+
+  // what's left: uncollected tracked locations by region, bulk collect per region
+  await page.evaluate(() => document.getElementById('whats-left').click());
+  await page.waitForTimeout(300);
+  const left = await page.evaluate(() => ({ shown: !document.getElementById('whats-left-panel').classList.contains('hidden'), items: document.querySelectorAll('.left-item').length, regions: [...document.querySelectorAll('.left-region-title')].map((e) => e.textContent) }));
+  check("what's left lists the four uncollected locations by region", left.shown && left.items === 4 && left.regions.includes('North'), JSON.stringify(left));
+  await page.evaluate(() => document.querySelector('[data-collect-region="7"]').click());
+  await page.waitForTimeout(400);
+  check('mark all in a region collects them', (await page.evaluate(() => document.getElementById('progress-text').textContent)) === '3 / 5 found' && (await page.evaluate(() => document.querySelectorAll('.left-item').length)) === 2);
+  await page.evaluate(() => document.querySelector('[data-left="close"]').click());
+  await page.waitForTimeout(200);
+  check("closing what's left shows the categories again", await page.evaluate(() => !document.getElementById('categories').classList.contains('hidden')));
 
   // storage: deleting the offline tiles keeps the data and switches the map to online tiles
   await page.evaluate(() => document.getElementById('back-library').click());

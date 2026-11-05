@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('api', {
   lookupGame: (input) => ipcRenderer.invoke('library:lookup', input),
   addGame: (input, opts) => ipcRenderer.invoke('library:add', input, opts),
   cancelJob: () => ipcRenderer.invoke('library:cancel'),
+  refreshAllGames: () => ipcRenderer.invoke('library:refresh-all'),
   stopTiles: () => ipcRenderer.invoke('library:stop-tiles'),
   removeGame: (slug) => ipcRenderer.invoke('library:remove', slug),
   cleanGame: (slug, what) => ipcRenderer.invoke('library:clean', slug, what),
@@ -30,7 +31,7 @@ contextBridge.exposeInMainWorld('api', {
   onUpdateStatus: (callback) => listen('update:status', callback),
   writeBackup: (gameSlug, mapSlug, json) => ipcRenderer.invoke('backup:write', gameSlug, mapSlug, json),
   readBackup: (gameSlug, mapSlug) => ipcRenderer.invoke('backup:read', gameSlug, mapSlug),
-  exportProgress: (json, suggestedName) => ipcRenderer.invoke('progress:export', json, suggestedName),
+  exportProgress: (json, suggestedName, kind) => ipcRenderer.invoke('progress:export', json, suggestedName, kind),
   importProgress: () => ipcRenderer.invoke('progress:import'),
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
 });
