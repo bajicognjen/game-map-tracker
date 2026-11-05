@@ -24,8 +24,8 @@ const check = (name, ok, detail = '') => {
   if (!ok) failures++;
 };
 const launch = () => electron.launch({ executablePath: electronBin, args: [ROOT], env: { ...process.env, GMT_USER_DATA: userData }, timeout: 60000 });
-const attach = (page, issues) => {
-  page.on('console', (m) => { if (['error', 'warning'].includes(m.type())) issues.push(m.text()); });
+const attach = (page, issues, ignore = null) => {
+  page.on('console', (m) => { if (['error', 'warning'].includes(m.type()) && !(ignore && ignore.test(m.text()))) issues.push(m.text()); });
   page.on('pageerror', (e) => issues.push(e.message));
   page.on('dialog', (d) => d.accept());
 };
@@ -91,8 +91,25 @@ try {
   await page.evaluate(() => document.getElementById('next-uncollected').click());
   await page.waitForSelector('.mg-popup .pp-title', { timeout: 10000 });
   check('next uncollected opens a popup', await page.evaluate(() => !!document.querySelector('.mg-popup .pp-title')));
-  await page.evaluate(() => document.querySelector('.leaflet-popup-close-button')?.click());
+
+  // keyboard: C collects the open marker, Escape closes it, / focuses search
+  await page.evaluate(() => document.getElementById('map').focus());
+  await page.keyboard.press('c');
   await page.waitForTimeout(300);
+  check('C collects the open marker', (await page.evaluate(() => document.getElementById('progress-text').textContent)) === '1 / 5 found');
+  await page.keyboard.press('c');
+  await page.waitForTimeout(300);
+  check('C again undoes it', (await page.evaluate(() => document.getElementById('progress-text').textContent)) === '0 / 5 found');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  check('Escape closes the popup', await page.evaluate(() => !document.querySelector('.mg-popup')));
+  await page.keyboard.press('/');
+  check('/ focuses the search box', await page.evaluate(() => document.activeElement === document.getElementById('search')));
+  await page.keyboard.press('Escape');
+
+  // settings: progress backups go to the chosen folder
+  const altBackups = path.join(userData, 'synced-backups');
+  await page.evaluate((dir) => window.api.applySettings({ backupsDir: dir, move: true }), altBackups);
 
   // popup, collect, note
   await page.fill('#search', 'chest one');
@@ -125,7 +142,7 @@ try {
   await page.waitForTimeout(2000); // let the debounced backup land (closing the window flushes it too)
   await app.close();
 
-  const backup = path.join(userData, 'backups', FIXTURE.gameSlug, `${FIXTURE.mapSlug}.json`);
+  const backup = path.join(userData, 'synced-backups', FIXTURE.gameSlug, `${FIXTURE.mapSlug}.json`);
   await new Promise((r) => setTimeout(r, 500));
   const backupJson = fs.existsSync(backup) ? JSON.parse(fs.readFileSync(backup, 'utf8')) : null;
   check('backup file written', !!backupJson && Object.keys(backupJson.collected || {}).length === 1 && backupJson.custom.length === 1, backup);
@@ -155,10 +172,21 @@ try {
   issues = [];
   app = await launch();
   page = await app.firstWindow();
-  attach(page, issues);
+  attach(page, issues, /Failed to load resource: net::ERR_NAME_NOT_RESOLVED/); // online-tile fallback has no server in this test
   await openFixtureMap(page);
   c = await counts(page);
   check('progress restored from the backup file', c.progress === '1 / 5 found' && c.custom === 1, JSON.stringify(c));
+
+  // storage: deleting the offline tiles keeps the data and switches the map to online tiles
+  await page.evaluate(() => document.getElementById('back-library').click());
+  await page.waitForTimeout(600);
+  check('library shows the tile size', await page.evaluate((slug) => /tiles \d+ MB/.test(document.querySelector(`.game-card[data-game="${slug}"] .storage`).textContent), FIXTURE.gameSlug));
+  await page.evaluate((slug) => document.querySelector(`.game-card[data-game="${slug}"] [data-clean="tiles"]`).click(), FIXTURE.gameSlug);
+  await page.waitForTimeout(800);
+  check('tiles folder removed', !fs.existsSync(path.join(userData, 'games', FIXTURE.gameSlug, 'maps', FIXTURE.mapSlug, 'tiles')));
+  await openFixtureMap(page);
+  check('map falls back to online tiles after cleanup', await page.evaluate(() => document.getElementById('tile-status').textContent.includes('streaming')));
+  check('no console errors in the third run', issues.length === 0, issues.slice(0, 3).join(' | '));
   await app.close();
 } catch (err) {
   console.error(err);

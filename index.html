@@ -16,8 +16,22 @@
       <header class="lib-header">
         <h1>Game Map Tracker</h1>
         <p class="muted">Offline interactive maps with collectible tracking. Paste the link to a game's interactive map page to add it, then open its maps.</p>
-        <p class="muted small"><span id="app-version"></span> · <button type="button" id="check-updates" class="link">Check for updates</button> · progress is backed up automatically (Help → Show progress backups folder)</p>
+        <p class="muted small"><span id="app-version"></span> · <button type="button" id="check-updates" class="link">Check for updates</button> · <button type="button" id="open-settings" class="link">Settings</button> · <button type="button" id="report-problem" class="link">Report a problem</button></p>
       </header>
+
+      <section class="card hidden" id="settings-panel">
+        <div class="row between"><h2>Settings</h2><button type="button" id="close-settings" class="link">Close</button></div>
+        <div class="setting">
+          <div class="setting-label">Game data folder <span class="muted small">(maps, tiles, screenshots — this is where the space goes)</span></div>
+          <div class="row wrap"><code id="games-dir" class="path"></code><button type="button" class="btn" data-choose="games">Change…</button><button type="button" class="btn hidden" data-default="games">Use default</button></div>
+        </div>
+        <div class="setting">
+          <div class="setting-label">Progress backups folder <span class="muted small">(point it at a synced folder to carry progress between computers)</span></div>
+          <div class="row wrap"><code id="backups-dir" class="path"></code><button type="button" class="btn" data-choose="backups">Change…</button><button type="button" class="btn hidden" data-default="backups">Use default</button></div>
+        </div>
+        <label class="chk small"><input type="checkbox" id="settings-move" checked> Move the existing contents when a folder changes</label>
+        <div id="settings-status" class="muted small"></div>
+      </section>
 
       <section class="card lib-add">
         <h2>Add a game</h2>

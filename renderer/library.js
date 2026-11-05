@@ -9,7 +9,11 @@ window.Library = (() => {
     progress: $('add-progress'), fill: $('add-fill'), log: $('add-log'),
     list: $('game-list'), empty: $('lib-empty'), version: $('app-version'), checkUpdates: $('check-updates'),
     exportAll: $('export-all'), importAll: $('import-all'),
+    openSettings: $('open-settings'), closeSettings: $('close-settings'), settingsPanel: $('settings-panel'),
+    gamesDir: $('games-dir'), backupsDir: $('backups-dir'), settingsMove: $('settings-move'), settingsStatus: $('settings-status'),
+    reportProblem: $('report-problem'),
   };
+  const MB = (b) => (b >= 1048576 * 1000 ? `${(b / 1073741824).toFixed(1)} GB` : `${Math.round(b / 1048576)} MB`);
   let onOpen = () => {};
   let games = [];
   let busy = false;
@@ -61,6 +65,7 @@ window.Library = (() => {
           </div>
           <div class="muted small">${g.maps.length} map${g.maps.length === 1 ? '' : 's'} · ${p.found} / ${p.total} found (${p.pct}%)</div>
           <div class="progress-bar"><div style="width:${p.pct}%"></div></div>
+          <div class="storage">On disk: tiles ${MB(g.sizes ? g.sizes.tiles : 0)}${g.sizes && g.sizes.tiles ? ` <button type="button" class="link" data-clean="tiles" title="Delete the offline tiles (the map then streams them from the site)">delete</button>` : ''} · screenshots ${MB(g.sizes ? g.sizes.media : 0)}${g.sizes && g.sizes.media ? ` <button type="button" class="link" data-clean="media" title="Delete the downloaded screenshots (popups then load them from the site)">delete</button>` : ''}</div>
           <ul class="maps">${maps}</ul>
           <div class="actions">
             <button type="button" class="btn" data-update="1" title="Re-read the map data from its site and fetch anything missing">Update</button>
@@ -156,6 +161,7 @@ window.Library = (() => {
       } catch (err) {
         const msg = ipcMessage(err);
         logLine(msg === 'Cancelled' ? 'Cancelled — anything already downloaded was kept' : `Failed: ${msg}`, 'error');
+        if (msg !== 'Cancelled') logLine('Details are in the log (Help → Show log folder); "Report a problem" opens an issue with it attached.', 'hint');
       } finally {
         unsubscribe();
         await refresh();
@@ -214,8 +220,44 @@ window.Library = (() => {
     await refresh();
   }
 
+  // ---------- settings ----------
+  async function renderSettings() {
+    const s = await window.api.getSettings();
+    el.gamesDir.textContent = s.gamesDir; el.gamesDir.title = s.gamesDir;
+    el.backupsDir.textContent = s.backupsDir; el.backupsDir.title = s.backupsDir;
+    el.settingsPanel.querySelector('[data-default="games"]').classList.toggle('hidden', !s.gamesDirCustom);
+    el.settingsPanel.querySelector('[data-default="backups"]').classList.toggle('hidden', !s.backupsDirCustom);
+  }
+  async function applySettings(change) {
+    el.settingsStatus.textContent = el.settingsMove.checked ? 'Moving files… this can take a while for large folders.' : 'Saving…';
+    try {
+      await window.api.applySettings({ ...change, move: el.settingsMove.checked });
+      el.settingsStatus.textContent = '';
+      toast('Settings saved');
+      await renderSettings();
+      await refresh();
+    } catch (err) {
+      el.settingsStatus.textContent = '';
+      toast(ipcMessage(err));
+    }
+  }
+
   function init(opts) {
     onOpen = opts.onOpen || onOpen;
+    el.openSettings.addEventListener('click', () => { el.settingsPanel.classList.toggle('hidden'); if (!el.settingsPanel.classList.contains('hidden')) renderSettings(); });
+    el.closeSettings.addEventListener('click', () => el.settingsPanel.classList.add('hidden'));
+    el.settingsPanel.addEventListener('click', async (e) => {
+      const choose = e.target.closest('[data-choose]');
+      const useDefault = e.target.closest('[data-default]');
+      if (choose) {
+        const kind = choose.dataset.choose;
+        const folder = await window.api.chooseFolder(kind);
+        if (folder) applySettings(kind === 'games' ? { gamesDir: folder } : { backupsDir: folder });
+      } else if (useDefault) {
+        applySettings(useDefault.dataset.default === 'games' ? { gamesDir: null } : { backupsDir: null });
+      }
+    });
+    el.reportProblem.addEventListener('click', () => window.api.reportProblem());
     el.exportAll.addEventListener('click', () => exportAll().catch((err) => toast(ipcMessage(err))));
     el.importAll.addEventListener('click', () => importAll().catch((err) => toast(ipcMessage(err))));
     window.api.appInfo().then((info) => { el.version.textContent = `Version ${info.version}`; }).catch(() => {});
@@ -245,6 +287,11 @@ window.Library = (() => {
       } else if (btn.dataset.detail) {
         if (!g || !g.sourceUrl) return;
         runAdd(g.sourceUrl, { ...(g.importOptions || {}), tiles: true, zoomOffset: 0, maps: [btn.dataset.detail], media: !!(g.importOptions && g.importOptions.media) });
+      } else if (btn.dataset.clean) {
+        const what = btn.dataset.clean;
+        if (!window.confirm(`Delete the downloaded ${what === 'tiles' ? 'map tiles' : 'screenshots'} of ${g ? g.title : slug}? Your progress and the map data stay; an Update can download them again.`)) return;
+        try { const r = await window.api.cleanGame(slug, what); toast(`Freed ${MB(r.freed)}`); } catch (err) { toast(ipcMessage(err)); }
+        await refresh();
       } else if (btn.dataset.remove) {
         if (!window.confirm(`Remove ${g ? g.title : slug} and its downloaded tiles and screenshots? Your collected progress is kept.`)) return;
         try { await window.api.removeGame(slug); toast('Game removed'); } catch (err) { toast(ipcMessage(err)); }

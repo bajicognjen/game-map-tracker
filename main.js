@@ -8,7 +8,9 @@ const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const paths = require('./lib/paths'); // sets the app name (user-data folder) — keep it first
+const settings = require('./lib/settings');
 const library = require('./lib/library');
+const log = require('./lib/log');
 const pkg = require('./package.json');
 
 const isHttpUrl = (url) => typeof url === 'string' && /^https?:\/\//i.test(url);
@@ -88,7 +90,7 @@ autoUpdater.on('update-available', (info) => updateStatus('available', { version
 autoUpdater.on('update-not-available', () => updateStatus('none'));
 autoUpdater.on('download-progress', (p) => updateStatus('downloading', { percent: Math.round(p.percent) }));
 autoUpdater.on('update-downloaded', (info) => updateStatus('downloaded', { version: info.version }));
-autoUpdater.on('error', (err) => updateStatus('error', { message: String((err && err.message) || err).split('\n')[0] }));
+autoUpdater.on('error', (err) => { log.warn('update check failed', { message: String((err && err.message) || err).split('\n')[0] }); updateStatus('error', { message: String((err && err.message) || err).split('\n')[0] }); });
 
 function checkForUpdates(manual) {
   if (updateMode() === 'disabled') { if (manual) updateStatus('disabled'); return; }
@@ -119,14 +121,86 @@ function buildMenu() {
       label: 'Help',
       submenu: [
         { label: 'Check for updates…', click: () => checkForUpdates(true) },
+        { type: 'separator' },
         { label: 'Show game data folder', click: () => { fs.mkdirSync(paths.userGamesDir(), { recursive: true }); shell.openPath(paths.userGamesDir()); } },
         { label: 'Show progress backups folder', click: () => { fs.mkdirSync(paths.backupsDir(), { recursive: true }); shell.openPath(paths.backupsDir()); } },
-        ...(repoUrl ? [{ label: 'Project page', click: () => shell.openExternal(repoUrl) }] : []),
+        { label: 'Show log folder', click: () => { fs.mkdirSync(log.logDir(), { recursive: true }); shell.openPath(log.logDir()); } },
+        { type: 'separator' },
+        ...(repoUrl ? [
+          { label: 'Report a problem…', click: () => shell.openExternal(reportUrl()) },
+          { label: 'Project page', click: () => shell.openExternal(repoUrl) },
+        ] : []),
       ],
     },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
+
+function reportUrl() {
+  const body = [
+    '**What happened**', '', '', '**What I expected**', '', '',
+    `**App** ${app.getVersion()} · ${process.platform} ${process.arch} · Electron ${process.versions.electron}`,
+    '', 'Please attach `app.log` from *Help → Show log folder* if a download or import failed.',
+  ].join('\n');
+  return `${repoUrl}/issues/new?title=${encodeURIComponent('Problem: ')}&body=${encodeURIComponent(body)}`;
+}
+
+// ---------- settings ----------
+function settingsInfo() {
+  return {
+    gamesDir: paths.userGamesDir(), defaultGamesDir: paths.defaultGamesDir(), gamesDirCustom: !!settings.load().gamesDir,
+    backupsDir: paths.backupsDir(), defaultBackupsDir: paths.defaultBackupsDir(), backupsDirCustom: !!settings.load().backupsDir,
+    logDir: log.logDir(),
+  };
+}
+const isInside = (child, parent) => { const rel = path.relative(parent, child); return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel)); };
+
+async function moveFolder(from, to) {
+  if (path.resolve(from) === path.resolve(to)) return;
+  if (isInside(to, from)) throw new Error('The new folder cannot be inside the current one');
+  fs.mkdirSync(to, { recursive: true });
+  if (!fs.existsSync(from)) return;
+  try {
+    for (const entry of fs.readdirSync(from)) fs.renameSync(path.join(from, entry), path.join(to, entry)); // same disk: instant
+  } catch {
+    await fs.promises.cp(from, to, { recursive: true, force: true }); // other disk: copy, then remove
+    fs.rmSync(from, { recursive: true, force: true });
+  }
+  if (fs.existsSync(from) && fs.readdirSync(from).length === 0) fs.rmdirSync(from);
+}
+
+ipcMain.handle('settings:get', () => settingsInfo());
+ipcMain.handle('settings:choose-folder', async (event, kind) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    title: kind === 'backups' ? 'Choose the folder for progress backups' : 'Choose the folder for game data',
+    properties: ['openDirectory', 'createDirectory'],
+  });
+  return canceled || !filePaths.length ? null : filePaths[0];
+});
+/** Apply folder changes. { gamesDir?: string|null, backupsDir?: string|null, move?: boolean } — null means default. */
+ipcMain.handle('settings:apply', async (event, change) => {
+  if (job) throw new Error('Wait for the current download to finish first');
+  const c = change || {};
+  if ('gamesDir' in c) {
+    const target = c.gamesDir ? path.resolve(String(c.gamesDir)) : paths.defaultGamesDir();
+    const current = paths.userGamesDir();
+    if (isInside(target, __dirname)) throw new Error('Pick a folder outside the application itself');
+    if (c.move !== false) await moveFolder(current, target);
+    settings.set({ gamesDir: c.gamesDir ? target : null });
+    log.info('games folder changed', { from: current, to: target, moved: c.move !== false });
+  }
+  if ('backupsDir' in c) {
+    const target = c.backupsDir ? path.resolve(String(c.backupsDir)) : paths.defaultBackupsDir();
+    const current = paths.backupsDir();
+    if (c.move !== false) await moveFolder(current, target);
+    settings.set({ backupsDir: c.backupsDir ? target : null });
+    log.info('backups folder changed', { from: current, to: target });
+  }
+  return settingsInfo();
+});
+ipcMain.handle('library:clean', (event, slug, what) => library.cleanGame(paths.assertSlug(slug, 'game slug'), String(what)));
+ipcMain.handle('shell:report-problem', () => (repoUrl ? shell.openExternal(reportUrl()) : undefined));
 
 // ---------- IPC ----------
 ipcMain.handle('app:info', () => ({ version: app.getVersion(), updateMode: updateMode(), releasesUrl: repoUrl ? `${repoUrl}/releases` : null }));
@@ -202,6 +276,7 @@ ipcMain.handle('progress:import', async (event) => {
 ipcMain.handle('shell:open-external', (event, url) => (isHttpUrl(url) ? shell.openExternal(url) : undefined));
 
 app.whenReady().then(() => {
+  log.info('app start', { version: app.getVersion(), platform: process.platform, arch: process.arch, electron: process.versions.electron, packaged: app.isPackaged });
   registerGameProtocol();
   buildMenu();
   createWindow();

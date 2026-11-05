@@ -99,7 +99,7 @@ export function writeFixture(userData) {
     map: {
       id: F.mapId, title: F.mapTitle, slug: F.mapSlug, source: 'http://localhost/test-game/maps/alpha', scrapedAt: new Date().toISOString(),
       width: 512, height: 512,
-      tiles: { remoteBaseUrl: 'http://localhost:1/tiles', pattern: '{z}/{y}/{x}.png', tileSize: 256, minZoom: 8, maxZoom: 9, nativeMaxZoom: 9, origin: { x: 0, y: 0 }, cols: 1, rows: 1 },
+      tiles: { remoteBaseUrl: 'https://tiles.invalid/t', pattern: '{z}/{y}/{x}.png', tileSize: 256, minZoom: 8, maxZoom: 9, nativeMaxZoom: 9, origin: { x: 0, y: 0 }, cols: 1, rows: 1 },
       start: { x: 256, y: 256, zoom: 8 },
     },
     icons: { sheet: 'markers/markers.png', sheetScale: 1, frames: 'markers/markers.json' },

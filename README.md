@@ -60,6 +60,12 @@ Games are stored in the app's user-data folder (`~/.config/game-map-tracker/game
 A `games/` folder next to the app is scanned too (`--dest bundled`), for games you want to ship inside a
 packaged build; add `"games/**"` to `build.files` in `package.json` to include it.
 
+**Settings** (link on the Library screen) lets you move the game data folder, for example to a bigger drive,
+and the progress backups folder, for example into a synced folder so another computer with the app restores
+the same progress. Each game card shows how much space its tiles and screenshots take, with *delete* links
+to free it while keeping the map data and your progress; an *Update* downloads them again. After an Update,
+the log says what changed on each map (new, removed and renamed locations).
+
 ## Using a map
 
 - **Click** a marker to see its category, region, notes and screenshot.
@@ -75,6 +81,8 @@ packaged build; add `"games/**"` to `build.files` in `package.json` to include i
   within the current filters.
 - The **★** next to a category decides whether it counts toward the progress bar, so the bar can track
   just the collectibles you care about.
+- Keyboard: `/` focuses search, `N` jumps to the next uncollected marker, `C` collects the marker whose popup
+  is open, `Esc` closes it.
 - Nearby markers are grouped into **clusters** at lower zooms (green when everything in them is collected);
   click a cluster to zoom in, or untick "Cluster nearby markers" to see every pin.
 - Category checkboxes filter the map; group checkboxes toggle a whole group. "Hide collected" hides what you have found.
@@ -103,6 +111,11 @@ Requires Node 22+ (Electron 45 needs it). `npm install` also fetches the Electro
 since Electron's package no longer does it itself); if `npm start` ever complains that
 `node_modules/electron/dist/electron` is missing, run `node node_modules/electron/install.js`.
 
+## When something goes wrong
+
+Imports write what happened to `app.log` (*Help → Show log folder*), including why a page could not be
+read. *Report a problem* on the Library screen opens a prefilled GitHub issue; attach the log to it.
+
 ## Tests
 
 ```bash
@@ -110,8 +123,9 @@ npm run test:e2e
 ```
 
 Drives the real app with Playwright against a small generated game (`test/fixture.mjs`), with no network:
-library, map, popup, collecting, tracked categories, the region filter, "next uncollected", notes, a custom
-marker, region outlines, persistence across restarts and restoring from the backup file. It needs a display;
+library, map, popup, collecting, tracked categories, the region filter, "next uncollected", keyboard
+shortcuts, notes, a custom marker, region outlines, a custom backups folder, persistence across restarts,
+restoring from the backup file and deleting offline tiles. It needs a display;
 CI runs it on Linux (under `xvfb-run`), Windows and macOS on every push (`.github/workflows/ci.yml`).
 
 ## Layout
@@ -128,7 +142,9 @@ lib/source.js        reads window.mapData from a game's map page with a hidden E
 lib/build-markers.js converts the page data into markers.json (tile origin from the map bounds)
 lib/tiles.js         tile pyramid downloader that skips blank quadrants; resumable
 lib/media.js         screenshot downloader
-lib/library.js       list / look up / add / update / remove games; load a map for the renderer
+lib/library.js       list / look up / add / update / remove / clean games; load a map for the renderer
+lib/settings.js      settings.json (custom game data and backups folders)
+lib/log.js           diagnostics log in the user-data folder
 scripts/add-game.js  command-line front end for lib/library.js
 test/fixture.mjs     generates an offline game for the end-to-end test
 test/e2e.mjs         the end-to-end test

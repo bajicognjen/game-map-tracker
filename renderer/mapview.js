@@ -88,8 +88,12 @@ window.MapView = (() => {
     document.addEventListener('keydown', (e) => {
       if (!view || e.ctrlKey || e.metaKey || e.altKey) return;
       const tag = (e.target && e.target.tagName) || '';
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
+      const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable);
+      if (e.key === 'Escape') { if (typing) e.target.blur(); else view.closePopup(); return; }
+      if (typing) return;
       if (e.key === 'n' || e.key === 'N') { e.preventDefault(); view.nextUncollected(); }
+      else if (e.key === '/') { e.preventDefault(); el.search.focus(); el.search.select(); }
+      else if (e.key === 'c' || e.key === 'C') { e.preventDefault(); view.collectOpen(); }
     });
     el.search.addEventListener('input', debounce(() => view && view.setSearch(el.search.value), 120));
     el.search.addEventListener('keydown', (e) => {
@@ -769,6 +773,12 @@ window.MapView = (() => {
       nextUncollected,
       toggleTracked,
       trackAll,
+      closePopup() { map.closePopup(); },
+      collectOpen() {
+        const btn = el.map.querySelector('.leaflet-popup [data-toggle]');
+        if (!btn) { toast('Open a marker first (click it), then press C'); return; }
+        toggleCollected(isCustomId(btn.dataset.toggle) ? btn.dataset.toggle : Number(btn.dataset.toggle));
+      },
       setSearch(value) { state.search = String(value).trim().toLowerCase(); applyFilters(); renderResults(); },
       onMapClick(e) {
         const t = e.target.closest('[data-toggle],[data-goto],[data-ext],[data-add-custom],[data-delete-custom],.pp-media.spoiler');
