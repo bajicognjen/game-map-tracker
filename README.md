@@ -102,10 +102,14 @@ then fetches screenshots for anything new. The window size and position are reme
 
 ## Updates
 
-The installed app checks for a new release on start-up and offers to download it; on Windows (installer)
-and Linux (AppImage) it installs itself on restart. The macOS build and the portable Windows build cannot
-replace themselves, so they open the download page instead. *Help → Check for updates…* or the link on the
-Library screen checks on demand.
+The installed app checks for a new release on start-up. When one is out, the **Check for updates** button on
+the Library screen turns into **Update to <version>** (and a banner offers **Update now**): one click downloads
+it, closes the app, installs it silently and starts the new version. On an install for all users, Windows asks
+for permission first. If a game download is running, the update waits and the button says **Restart to update**.
+The macOS build and the portable Windows build cannot replace themselves, so the button opens the download page
+instead. *Help → Check for updates…* or the button checks on demand.
+
+Only published releases are offered; a draft release is invisible to the update check.
 
 ## Run from source
 
@@ -143,7 +147,7 @@ npm run test:e2e
 ```
 
 Drives the real app with Playwright against a small generated game (`test/fixture.mjs`), with no network:
-library, map, popup, collecting, tracked categories, the region filter, "next uncollected", keyboard
+library, the update button (download stubbed), map, popup, collecting, tracked categories, the region filter, "next uncollected", keyboard
 shortcuts, notes, a draggable custom marker, region outlines, titles at high zoom, the what's-left list with
 bulk collect, a custom backups folder, the remembered window size, starting on the library after a restart,
 persistence across restarts, restoring

@@ -26,7 +26,7 @@ contextBridge.exposeInMainWorld('api', {
   onMenu: (callback) => listen('menu', callback),
   loadMap: (source, gameSlug, mapSlug) => ipcRenderer.invoke('map:load', source, gameSlug, mapSlug),
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
-  downloadUpdate: () => ipcRenderer.invoke('update:download'),
+  downloadUpdate: (opts) => ipcRenderer.invoke('update:download', opts),
   installUpdate: () => ipcRenderer.invoke('update:install'),
   onUpdateStatus: (callback) => listen('update:status', callback),
   writeBackup: (gameSlug, mapSlug, json) => ipcRenderer.invoke('backup:write', gameSlug, mapSlug, json),

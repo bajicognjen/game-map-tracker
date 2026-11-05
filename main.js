@@ -19,6 +19,10 @@ const repoUrl = (() => {
   return m ? `https://github.com/${m[1]}/${m[2]}` : null;
 })();
 
+// English everywhere, whatever the Windows display language: Chromium's own text (edit menus,
+// form messages) and the language asked of map sites (lib/source.js).
+app.commandLine.appendSwitch('lang', 'en-US');
+
 // gamemap://<source>/<game slug>/<relative path>  ->  file inside that games folder
 protocol.registerSchemesAsPrivileged([{ scheme: 'gamemap', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }]);
 
@@ -130,13 +134,31 @@ const notesText = (notes) => {
 autoUpdater.on('update-available', (info) => updateStatus('available', { version: info.version, notes: notesText(info.releaseNotes) }));
 autoUpdater.on('update-not-available', () => updateStatus('none'));
 autoUpdater.on('download-progress', (p) => updateStatus('downloading', { percent: Math.round(p.percent) }));
-autoUpdater.on('update-downloaded', (info) => updateStatus('downloaded', { version: info.version }));
+// "Update now" downloads and then installs by itself: the app closes, the installer runs silently
+// (Windows asks for permission when the app is installed for all users) and the new version starts.
+let installWhenDownloaded = false;
+autoUpdater.on('update-downloaded', (info) => {
+  if (installWhenDownloaded && !job) {
+    updateStatus('installing', { version: info.version });
+    setTimeout(() => { // let the banner show what is happening first
+      try { installUpdate(info.version); } catch { updateStatus('downloaded', { version: info.version }); }
+    }, 1500);
+  } else {
+    updateStatus('downloaded', { version: info.version });
+  }
+});
 autoUpdater.on('error', (err) => { log.warn('update check failed', { message: String((err && err.message) || err).split('\n')[0] }); updateStatus('error', { message: String((err && err.message) || err).split('\n')[0] }); });
 
 function checkForUpdates(manual) {
-  if (updateMode() === 'disabled') { if (manual) updateStatus('disabled'); return; }
   manualCheck = !!manual;
+  if (updateMode() === 'disabled') { if (manual) updateStatus('disabled'); return; }
   autoUpdater.checkForUpdates().catch(() => { /* reported through the error event */ });
+}
+
+function installUpdate(version) {
+  if (job) throw new Error('Wait for the current download to finish first');
+  log.info('installing update', { version });
+  autoUpdater.quitAndInstall(true, true); // silent install, then start the new version
 }
 
 function buildMenu() {
@@ -289,8 +311,14 @@ ipcMain.handle('backup:read', (event, gameSlug, mapSlug) => {
 });
 
 ipcMain.handle('update:check', () => { checkForUpdates(true); return true; });
-ipcMain.handle('update:download', () => { autoUpdater.downloadUpdate().catch(() => {}); return true; });
-ipcMain.handle('update:install', () => { autoUpdater.quitAndInstall(); return true; });
+ipcMain.handle('update:download', (event, opts) => {
+  if (updateMode() !== 'auto') return false;
+  installWhenDownloaded = !!(opts && opts.install);
+  manualCheck = true; // the user asked for it: report a failed download
+  autoUpdater.downloadUpdate().catch(() => { /* reported through the error event */ });
+  return true;
+});
+ipcMain.handle('update:install', () => { installUpdate(); return true; });
 
 ipcMain.handle('progress:export', async (event, json, suggestedName, kind) => {
   const win = BrowserWindow.fromWebContents(event.sender);

@@ -27,8 +27,11 @@
   window.MapView.init({ onBack: showLibrary });
   window.api.onMenu((action) => { if (action === 'library') showLibrary(); });
 
-  // ---------- update banner ----------
+  // ---------- updates: the Library's update button and the banner ----------
+  const updateBtn = $('check-updates');
   const banner = { box: $('update-banner'), text: $('update-text'), action: $('update-action'), dismiss: $('update-dismiss'), notesToggle: $('update-notes-toggle'), notes: $('update-notes') };
+  let update = null; // what the main process last said about updates
+  let buttonTimer = null;
   function showBanner(text, actionLabel, onAction, notes) {
     banner.text.textContent = text;
     banner.action.textContent = actionLabel || '';
@@ -43,20 +46,78 @@
   }
   banner.notesToggle.addEventListener('click', () => banner.notes.classList.toggle('hidden'));
   banner.dismiss.addEventListener('click', () => banner.box.classList.add('hidden'));
-  window.api.onUpdateStatus((s) => {
-    switch (s.status) {
-      case 'available':
-        if (s.mode === 'auto') showBanner(`Version ${s.version} is available`, 'Download', () => { window.api.downloadUpdate(); showBanner(`Downloading version ${s.version}…`); }, s.notes);
-        else showBanner(`Version ${s.version} is available`, 'Open download page', () => window.api.openExternal(s.releasesUrl), s.notes);
-        break;
-      case 'downloading': showBanner(`Downloading update… ${s.percent}%`); break;
-      case 'downloaded': showBanner(`Version ${s.version} is ready to install`, 'Restart now', () => window.api.installUpdate()); break;
-      case 'none': if (s.manual) toast(`You have the latest version (${s.current})`); break;
-      case 'disabled': if (s.manual) toast('Update checks only work in the installed app'); break;
-      case 'error': if (s.manual) toast(`Update check failed: ${s.message}`); break;
-      default: break;
+  function setButton(label, { disabled = false, primary = false, title = '' } = {}) {
+    updateBtn.textContent = label;
+    updateBtn.disabled = disabled;
+    updateBtn.classList.toggle('primary', primary);
+    updateBtn.classList.toggle('ghost', !primary);
+    updateBtn.title = title;
+  }
+  const idleButton = () => setButton('Check for updates', { title: 'Look for a newer version of the app' });
+  const ipcFail = (err) => toast(String((err && err.message) || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''));
+
+  /** One click: download, install and restart (or open the download page where the app cannot replace itself). */
+  function updateNow() {
+    if (!update || update.status !== 'available') return;
+    if (update.mode !== 'auto') { window.api.openExternal(update.releasesUrl); return; }
+    onUpdateStatus({ status: 'downloading', percent: 0 });
+    window.api.downloadUpdate({ install: true }).catch(ipcFail);
+  }
+  const installNow = () => window.api.installUpdate().catch(ipcFail);
+
+  updateBtn.addEventListener('click', () => {
+    const status = update && update.status;
+    if (status === 'available') updateNow();
+    else if (status === 'downloaded') installNow();
+    else if (status !== 'downloading' && status !== 'installing') {
+      setButton('Checking…', { disabled: true });
+      buttonTimer = setTimeout(idleButton, 30000); // no answer: let it be pressed again
+      window.api.checkForUpdates();
     }
   });
+
+  function onUpdateStatus(s) {
+    clearTimeout(buttonTimer);
+    update = { ...(update || {}), ...s }; // "downloading" carries no version; keep the one from "available"
+    const u = update;
+    const auto = u.mode === 'auto';
+    switch (s.status) {
+      case 'available':
+        setButton(auto ? `Update to ${u.version}` : `Get version ${u.version}`, { primary: true, title: auto ? 'Download and install it; the app restarts by itself' : 'Open the download page' });
+        showBanner(`Version ${u.version} is available`, auto ? 'Update now' : 'Open download page', updateNow, u.notes);
+        break;
+      case 'downloading':
+        setButton(`Downloading… ${u.percent}%`, { disabled: true });
+        showBanner(`Downloading version ${u.version}… ${u.percent}%`);
+        break;
+      case 'installing':
+        setButton('Installing…', { disabled: true });
+        showBanner(`Installing version ${u.version}. The app closes and opens again by itself.`);
+        break;
+      case 'downloaded':
+        setButton('Restart to update', { primary: true, title: `Install version ${u.version} and restart` });
+        showBanner(`Version ${u.version} is ready to install`, 'Restart now', installNow);
+        break;
+      case 'none':
+        if (!u.manual) { idleButton(); break; }
+        setButton('Up to date');
+        buttonTimer = setTimeout(idleButton, 4000);
+        toast(`You have the latest version (${u.current})`);
+        break;
+      case 'disabled':
+        idleButton();
+        if (u.manual) toast('Updates only work in the installed app');
+        break;
+      case 'error':
+        idleButton();
+        banner.box.classList.add('hidden');
+        if (u.manual) toast(`Update failed: ${u.message}`);
+        break;
+      default: break;
+    }
+  }
+  window.api.onUpdateStatus(onUpdateStatus);
+  idleButton();
 
   // Earlier versions reopened the last map on start-up; drop what they stored.
   try { localStorage.removeItem('game-map-tracker:last-map'); } catch { /* ignore */ }

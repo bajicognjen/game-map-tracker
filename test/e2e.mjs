@@ -55,6 +55,36 @@ try {
   await page.waitForSelector('#library:not(.hidden)', { timeout: 30000 });
   await page.waitForTimeout(800);
   check('library lists the fixture game', await page.evaluate((slug) => !!document.querySelector(`.game-card[data-game="${slug}"]`), FIXTURE.gameSlug));
+
+  // update button: from source, a check says updates need the installed app and the button resets
+  await page.evaluate(() => document.getElementById('check-updates').click());
+  await page.waitForTimeout(400);
+  check('update check from source explains itself', await page.evaluate(() => document.getElementById('check-updates').textContent === 'Check for updates' && !document.getElementById('check-updates').disabled && /installed app/.test(document.getElementById('toast').textContent)));
+  // one click downloads and installs (the main-process download is stubbed; no network)
+  await app.evaluate(({ ipcMain }) => {
+    globalThis.updateCalls = [];
+    ipcMain.removeHandler('update:download');
+    ipcMain.handle('update:download', (event, opts) => { globalThis.updateCalls.push(opts || null); return true; });
+  });
+  const sendUpdate = (s) => app.evaluate(({ BrowserWindow }, status) => BrowserWindow.getAllWindows()[0].webContents.send('update:status', { mode: 'auto', manual: false, current: '1.0.0', releasesUrl: null, ...status }), s);
+  await sendUpdate({ status: 'available', version: '9.9.9', notes: 'Fixes' });
+  await page.waitForTimeout(200);
+  const offered = await page.evaluate(() => ({ button: document.getElementById('check-updates').textContent, action: document.getElementById('update-action').textContent, shown: !document.getElementById('update-banner').classList.contains('hidden') }));
+  check('update button offers the new version', offered.button === 'Update to 9.9.9' && offered.action === 'Update now' && offered.shown, JSON.stringify(offered));
+  await page.evaluate(() => document.getElementById('check-updates').click());
+  await page.waitForTimeout(300);
+  const updateCalls = await app.evaluate(() => globalThis.updateCalls);
+  check('one click downloads and installs afterwards', updateCalls.length === 1 && updateCalls[0] && updateCalls[0].install === true, JSON.stringify(updateCalls));
+  await sendUpdate({ status: 'downloading', percent: 42, manual: true });
+  await page.waitForTimeout(200);
+  check('update button shows download progress', (await page.evaluate(() => document.getElementById('check-updates').textContent)) === 'Downloading… 42%');
+  await sendUpdate({ status: 'installing', version: '9.9.9', manual: true });
+  await page.waitForTimeout(200);
+  check('banner says the app restarts by itself', await page.evaluate(() => /opens again by itself/.test(document.getElementById('update-text').textContent)));
+  await sendUpdate({ status: 'none', manual: false });
+  await page.evaluate(() => document.getElementById('update-dismiss').click());
+  await page.waitForTimeout(200);
+
   await openFixtureMap(page);
   if (await page.evaluate(() => document.getElementById('cluster-markers').checked)) {
     await page.evaluate(() => document.getElementById('cluster-markers').click());
