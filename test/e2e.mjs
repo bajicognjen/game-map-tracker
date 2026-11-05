@@ -83,7 +83,14 @@ try {
   await page.selectOption('#region-filter', '7');
   await page.waitForTimeout(500);
   check('region filter shows only that region', (await counts(page)).pins === 3, JSON.stringify(await counts(page)));
-  await page.selectOption('#region-filter', '');
+  // jumping to a search result outside the filtered region clears the region filter
+  await page.fill('#search', 'key of the south');
+  await page.waitForTimeout(400);
+  await page.evaluate(() => document.querySelector('#search-results .result').click());
+  await page.waitForSelector('.mg-popup .pp-title', { timeout: 10000 });
+  check('jump to a result outside the region clears the region filter', await page.evaluate(() => document.getElementById('region-filter').value === '' && document.querySelector('.pp-title').textContent === 'Key of the south'));
+  await page.fill('#search', '');
+  await page.evaluate(() => document.querySelector('.leaflet-popup-close-button')?.click());
   await page.waitForTimeout(500);
   check('clearing the region filter shows everything', (await counts(page)).pins === 5);
 

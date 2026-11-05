@@ -487,6 +487,7 @@ window.MapView = (() => {
       let changed = false;
       if (state.hidden.has(entry.data.categoryId)) { state.hidden.delete(entry.data.categoryId); persist.hidden(); changed = true; }
       if (state.hideCollected && isCollected(id)) { state.hideCollected = false; el.hideCollected.checked = false; persist.hideCollected(); changed = true; }
+      if (state.region != null && entry.data.categoryId !== CUSTOM && entry.data.regionId !== state.region) { state.region = null; el.regionFilter.value = ''; persist.region(); changed = true; }
       if (changed) { syncCategoryUI(); applyFilters(); }
       map.closePopup();
       let opened = false;

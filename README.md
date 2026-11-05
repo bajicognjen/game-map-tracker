@@ -111,6 +111,13 @@ Requires Node 22+ (Electron 45 needs it). `npm install` also fetches the Electro
 since Electron's package no longer does it itself); if `npm start` ever complains that
 `node_modules/electron/dist/electron` is missing, run `node node_modules/electron/install.js`.
 
+## Large maps
+
+Measured on a map with 5,709 locations: opening it takes about a quarter of a second, category filters apply
+in under 100 ms, a search over every location takes about a quarter of a second, and switching to another
+map of the same game is instant. Turning clustering off puts every pin on the map at once and takes about a
+second on a map that size.
+
 ## When something goes wrong
 
 Imports write what happened to `app.log` (*Help → Show log folder*), including why a page could not be
