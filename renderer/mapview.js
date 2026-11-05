@@ -27,7 +27,6 @@ window.MapView = (() => {
   const CUSTOM = 'custom';
   const CUSTOM_COLOR = '#ffb347';
   let onBack = () => {};
-  let onOpened = () => {};
   let view = null; // the active map
   let toastTimer = null;
 
@@ -73,7 +72,6 @@ window.MapView = (() => {
   // ---------- static wiring (once) ----------
   function init(opts) {
     onBack = opts.onBack || onBack;
-    onOpened = opts.onOpened || onOpened;
     el.back.addEventListener('click', () => onBack());
     el.mapSelect.addEventListener('change', () => { if (view) open(view.source, view.gameSlug, el.mapSelect.value).catch((e) => toast(ipcMessage(e))); });
     el.categories.addEventListener('change', (e) => view && view.onCategoryChange(e));
@@ -140,7 +138,6 @@ window.MapView = (() => {
     el.mapTitle.textContent = '';
     const payload = await window.api.loadMap(source, gameSlug, mapSlug);
     view = await createView(payload, source, gameSlug, mapSlug);
-    onOpened(source, gameSlug, mapSlug);
   }
 
   function close() {

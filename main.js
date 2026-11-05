@@ -80,6 +80,23 @@ function createWindow() {
     return { action: 'deny' };
   });
   mainWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  // A dead page leaves a blank window; say so (and log it) instead.
+  mainWindow.webContents.on('render-process-gone', async (event, details) => {
+    log.error('window page crashed', { reason: details.reason, exitCode: details.exitCode, electron: process.versions.electron });
+    const win = mainWindow;
+    if (!win || win.isDestroyed()) return;
+    const { response } = await dialog.showMessageBox(win, {
+      type: 'error',
+      title: 'Game Map Tracker',
+      message: 'The window stopped working',
+      detail: `Reason: ${details.reason} (code ${details.exitCode}). Details are in app.log (Help → Show log folder).`,
+      buttons: ['Reload', 'Quit'],
+      defaultId: 0,
+      cancelId: 1,
+    });
+    if (response === 0 && !win.isDestroyed()) win.webContents.reload();
+    else app.quit();
+  });
   if (saved && saved.maximized) mainWindow.maximize();
   let boundsTimer = null;
   const onBoundsChange = () => { clearTimeout(boundsTimer); boundsTimer = setTimeout(() => rememberBounds(mainWindow), 400); };
@@ -308,6 +325,10 @@ app.whenReady().then(() => {
   createWindow();
   setTimeout(() => checkForUpdates(false), 4000);
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+});
+
+app.on('child-process-gone', (event, details) => {
+  if (details.reason !== 'clean-exit') log.warn('helper process ended', { type: details.type, reason: details.reason, exitCode: details.exitCode });
 });
 
 app.on('window-all-closed', () => {

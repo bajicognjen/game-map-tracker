@@ -118,6 +118,10 @@ Requires Node 22+ (Electron 45 needs it). `npm install` also fetches the Electro
 since Electron's package no longer does it itself); if `npm start` ever complains that
 `node_modules/electron/dist/electron` is missing, run `node node_modules/electron/install.js`.
 
+Electron is pinned to exactly 45.2.2. On Windows 11 26H2 (build 26300), 45.2.3's page process crashes at start-up
+(exit code `0x80000003`, even on a blank page and with `--no-sandbox`), so the window stays empty; 45.2.2 and
+earlier work. Check a newer Electron on such a machine before moving the pin.
+
 ## Large maps
 
 Measured on a map with 5,709 locations: opening it takes about a quarter of a second, category filters apply
@@ -128,7 +132,9 @@ second on a map that size.
 ## When something goes wrong
 
 Imports write what happened to `app.log` (*Help → Show log folder*), including why a page could not be
-read. *Report a problem* on the Library screen opens a prefilled GitHub issue; attach the log to it.
+read. If the window's page crashes, the app says so (instead of showing an empty window), offers to reload, and
+logs the reason and exit code there too. *Report a problem* on the Library screen opens a prefilled GitHub issue;
+attach the log to it.
 
 ## Tests
 
@@ -139,7 +145,8 @@ npm run test:e2e
 Drives the real app with Playwright against a small generated game (`test/fixture.mjs`), with no network:
 library, map, popup, collecting, tracked categories, the region filter, "next uncollected", keyboard
 shortcuts, notes, a draggable custom marker, region outlines, titles at high zoom, the what's-left list with
-bulk collect, a custom backups folder, the remembered window size, persistence across restarts, restoring
+bulk collect, a custom backups folder, the remembered window size, starting on the library after a restart,
+persistence across restarts, restoring
 from the backup file and deleting offline tiles. It needs a display;
 CI runs it on Linux (under `xvfb-run`), Windows and macOS on every push (`.github/workflows/ci.yml`).
 
@@ -149,7 +156,7 @@ CI runs it on Linux (under `xvfb-run`), Windows and macOS on every push (`.githu
 main.js              Electron main process: window, menu, gamemap:// protocol, IPC
 preload.js           bridge exposing a small API to the sandboxed page
 index.html           library screen + map screen (sidebar and map canvas)
-renderer/app.js      screen switching, remembers the last opened map
+renderer/app.js      screen switching (always starts on the library), update banner
 renderer/library.js  library screen: list, add (with live progress), update, remove
 renderer/mapview.js  Leaflet map, markers, filters, popups, persistence
 lib/paths.js         where game data lives (user-data folder, optional bundled games/)

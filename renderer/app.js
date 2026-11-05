@@ -1,7 +1,6 @@
 'use strict';
-/** Screen switching (library <-> map view), the last opened map, and the update banner. */
+/** Screen switching (library <-> map view) and the update banner. The app always starts on the library. */
 (async function main() {
-  const LAST_KEY = 'game-map-tracker:last-map';
   const $ = (id) => document.getElementById(id);
   const screens = { library: $('library'), map: $('mapscreen') };
   const show = (name) => { for (const [key, node] of Object.entries(screens)) node.classList.toggle('hidden', key !== name); };
@@ -25,11 +24,7 @@
   }
 
   window.Library.init({ onOpen: openMap });
-  window.MapView.init({
-    onBack: showLibrary,
-    // Also fires when a map is switched from the sidebar dropdown, so the last map is always current.
-    onOpened: (source, gameSlug, mapSlug) => { try { localStorage.setItem(LAST_KEY, JSON.stringify({ source, game: gameSlug, map: mapSlug })); } catch { /* ignore */ } },
-  });
+  window.MapView.init({ onBack: showLibrary });
   window.api.onMenu((action) => { if (action === 'library') showLibrary(); });
 
   // ---------- update banner ----------
@@ -63,13 +58,10 @@
     }
   });
 
-  const games = await window.Library.refresh();
-  let last = null;
-  try { last = JSON.parse(localStorage.getItem(LAST_KEY)); } catch { /* ignore */ }
-  const game = last && games.find((g) => g.slug === last.game && g.source === last.source);
-  const map = game && game.maps.find((m) => m.slug === last.map && m.ready);
-  if (game && map) openMap(game.source, game.slug, map.slug);
-  else show('library');
+  // Earlier versions reopened the last map on start-up; drop what they stored.
+  try { localStorage.removeItem('game-map-tracker:last-map'); } catch { /* ignore */ }
+  show('library');
+  await window.Library.refresh();
 })().catch((err) => {
   console.error(err);
   document.body.insertAdjacentHTML('beforeend', `<pre style="position:fixed;inset:0;margin:0;padding:24px;background:#300;color:#fff;overflow:auto;z-index:9999">Failed to start: ${String((err && err.stack) || err).replace(/</g, '&lt;')}</pre>`);

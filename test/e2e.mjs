@@ -30,12 +30,8 @@ const attach = (page, issues, ignore = null) => {
   page.on('dialog', (d) => d.accept());
 };
 const openFixtureMap = async (page) => {
-  await page.waitForSelector('#library:not(.hidden), #mapscreen:not(.hidden)', { timeout: 30000 });
-  await page.waitForTimeout(800);
-  if (await page.evaluate(() => document.getElementById('library').classList.contains('hidden'))) {
-    await page.evaluate(() => document.getElementById('back-library').click());
-    await page.waitForTimeout(400);
-  }
+  await page.waitForSelector(`#library:not(.hidden) .game-card[data-game="${FIXTURE.gameSlug}"]`, { timeout: 30000 });
+  await page.waitForTimeout(400);
   await page.evaluate((slug) => document.querySelector(`.game-card[data-game="${slug}"] [data-open]`).click(), FIXTURE.gameSlug);
   await page.waitForSelector('#mapscreen:not(.hidden) #categories .cat', { timeout: 30000 });
   await page.waitForTimeout(1200);
@@ -201,6 +197,10 @@ try {
   attach(page, issues);
   const bounds = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getBounds());
   check('window size remembered', Math.abs(bounds.width - wanted.width) <= 16 && Math.abs(bounds.height - wanted.height) <= 40, `${bounds.width}x${bounds.height}, wanted ${wanted.width}x${wanted.height}`);
+  // the first run closed with a map open; the app still starts on the library
+  await page.waitForSelector('#library:not(.hidden), #mapscreen:not(.hidden)', { timeout: 30000 });
+  await page.waitForTimeout(1500);
+  check('starts on the library, not the last map', await page.evaluate(() => !document.getElementById('library').classList.contains('hidden') && document.getElementById('mapscreen').classList.contains('hidden')));
   await openFixtureMap(page);
   c = await counts(page);
   check('collected progress persists', c.progress === '1 / 5 found', c.progress);
