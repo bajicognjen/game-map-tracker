@@ -19,9 +19,17 @@
 
   function showLibrary() {
     window.MapView.close();
+    document.title = 'Game Map Tracker'; // the window title adds the version (main.js)
     show('library');
     window.Library.refresh();
   }
+
+  // The version is always on screen: the Library's top bar and the map sidebar's footer.
+  window.api.appInfo().then((info) => {
+    for (const node of document.querySelectorAll('[data-app-version]')) {
+      node.textContent = node.dataset.appVersion === 'short' ? `v${info.version}` : `Version ${info.version}`;
+    }
+  }).catch(() => {});
 
   window.Library.init({ onOpen: openMap });
   window.MapView.init({ onBack: showLibrary });

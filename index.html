@@ -24,7 +24,7 @@
         <button type="button" id="check-updates" class="btn ghost">Check for updates</button>
         <button type="button" id="open-settings" class="btn ghost">Settings</button>
         <button type="button" id="report-problem" class="btn ghost">Report a problem</button>
-        <span id="app-version" class="version"></span>
+        <span id="app-version" class="version" data-app-version></span>
       </nav>
     </header>
 
@@ -154,7 +154,10 @@
         <button type="button" id="import-progress" class="btn ghost">Import</button>
         <span class="spacer"></span>
         <button type="button" id="reset-progress" class="link danger">Reset</button>
-        <div id="tile-status" class="muted small"></div>
+        <div class="footer-meta">
+          <span id="tile-status" class="muted small"></span>
+          <span id="map-app-version" class="version" data-app-version="short" title="Game Map Tracker version"></span>
+        </div>
       </footer>
     </aside>
     <main id="map" role="application" aria-label="Map"></main>

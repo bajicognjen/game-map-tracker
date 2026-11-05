@@ -60,6 +60,12 @@ function rememberBounds(win) {
   settings.set({ window: { x: b.x, y: b.y, width: b.width, height: b.height, maximized: win.isMaximized() } });
 }
 
+// The window title always ends with the version: "Game Map Tracker 2.6.2", or "<game> — <map> · Game Map Tracker 2.6.2".
+const windowTitle = (pageTitle) => {
+  const base = `Game Map Tracker ${app.getVersion()}`;
+  return pageTitle && pageTitle !== 'Game Map Tracker' ? `${pageTitle} · ${base}` : base;
+};
+
 function createWindow() {
   const saved = savedBounds();
   mainWindow = new BrowserWindow({
@@ -68,7 +74,7 @@ function createWindow() {
     ...(saved && saved.x !== undefined ? { x: saved.x, y: saved.y } : {}),
     minWidth: 960,
     minHeight: 600,
-    title: 'Game Map Tracker',
+    title: windowTitle(),
     backgroundColor: '#0e1216',
     autoHideMenuBar: true,
     webPreferences: {
@@ -84,6 +90,10 @@ function createWindow() {
     return { action: 'deny' };
   });
   mainWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  mainWindow.on('page-title-updated', (event, title) => {
+    event.preventDefault();
+    mainWindow.setTitle(windowTitle(title));
+  });
   // A dead page leaves a blank window; say so (and log it) instead.
   mainWindow.webContents.on('render-process-gone', async (event, details) => {
     log.error('window page crashed', { reason: details.reason, exitCode: details.exitCode, electron: process.versions.electron });

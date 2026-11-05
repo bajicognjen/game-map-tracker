@@ -208,7 +208,9 @@ select { padding-right: 28px; appearance: none; -webkit-appearance: none;
 
 .sidebar-footer { padding: 10px 16px 12px; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .sidebar-footer .btn { height: 30px; padding: 0 10px; font-size: 13px; }
-#tile-status { flex-basis: 100%; }
+.footer-meta { flex-basis: 100%; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.footer-meta #tile-status { flex: 1; min-width: 0; }
+.footer-meta .version { margin-left: auto; flex: 0 0 auto; }
 
 /* ---------- search results ---------- */
 #search-results { flex: 1 1 auto; overflow-y: auto; padding: 6px 0 10px; }

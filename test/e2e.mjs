@@ -10,6 +10,7 @@ import { _electron as electron } from 'playwright-core';
 import { writeFixture, FIXTURE } from './fixture.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const VERSION = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
 const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'gmt-e2e-'));
 writeFixture(userData);
 const electronBin = process.platform === 'win32'
@@ -55,6 +56,9 @@ try {
   await page.waitForSelector('#library:not(.hidden)', { timeout: 30000 });
   await page.waitForTimeout(800);
   check('library lists the fixture game', await page.evaluate((slug) => !!document.querySelector(`.game-card[data-game="${slug}"]`), FIXTURE.gameSlug));
+  const windowTitle = () => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getTitle());
+  check('library shows the version', (await page.evaluate(() => document.getElementById('app-version').textContent)) === `Version ${VERSION}`);
+  check('window title has the version on the library', (await windowTitle()) === `Game Map Tracker ${VERSION}`, await windowTitle());
 
   // update button: from source, a check says updates need the installed app and the button resets
   await page.evaluate(() => document.getElementById('check-updates').click());
@@ -92,6 +96,8 @@ try {
   }
   let c = await counts(page);
   check('all five markers shown without clustering', c.pins === 5, JSON.stringify(c));
+  check('map screen shows the version', await page.evaluate((v) => { const n = document.getElementById('map-app-version'); return n.textContent === `v${v}` && n.getBoundingClientRect().width > 0; }, VERSION));
+  check('window title has the map and the version', (await windowTitle()).endsWith(` · Game Map Tracker ${VERSION}`) && (await windowTitle()).length > `Game Map Tracker ${VERSION}`.length + 3, await windowTitle());
   check('tiles load from the fixture', c.tiles > 0 && c.broken === 0, `loaded ${c.tiles}, broken ${c.broken}`);
   check('region label drawn', c.regionLabels === 1);
   check('progress starts at 0 / 5', c.progress === '0 / 5 found', c.progress);
@@ -271,6 +277,7 @@ try {
   // storage: deleting the offline tiles keeps the data and switches the map to online tiles
   await page.evaluate(() => document.getElementById('back-library').click());
   await page.waitForTimeout(600);
+  check('window title goes back to the app name and version', (await windowTitle()) === `Game Map Tracker ${VERSION}`, await windowTitle());
   check('library shows the tile size', await page.evaluate((slug) => /tiles \d+ (KB|MB|GB)/.test(document.querySelector(`.game-card[data-game="${slug}"] .storage`).textContent), FIXTURE.gameSlug));
   await page.evaluate((slug) => document.querySelector(`.game-card[data-game="${slug}"] [data-clean="tiles"]`).click(), FIXTURE.gameSlug);
   await page.waitForTimeout(800);

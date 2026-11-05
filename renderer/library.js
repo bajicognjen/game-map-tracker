@@ -7,7 +7,7 @@ window.Library = (() => {
     plan: $('add-plan'), planTitle: $('plan-title'), planNote: $('plan-note'), planMaps: $('plan-maps'), planBack: $('plan-back'),
     tiles: $('add-tiles'), zoom: $('add-zoom'), media: $('add-media'),
     progress: $('add-progress'), fill: $('add-fill'), log: $('add-log'),
-    list: $('game-list'), empty: $('lib-empty'), version: $('app-version'),
+    list: $('game-list'), empty: $('lib-empty'),
     exportAll: $('export-all'), importAll: $('import-all'), checkAll: $('check-all'),
     openSettings: $('open-settings'), closeSettings: $('close-settings'), settingsPanel: $('settings-panel'),
     gamesDir: $('games-dir'), backupsDir: $('backups-dir'), settingsMove: $('settings-move'), settingsStatus: $('settings-status'),
@@ -299,7 +299,6 @@ window.Library = (() => {
     el.checkAll.addEventListener('click', () => runRefreshAll());
     el.exportAll.addEventListener('click', () => exportAll().catch((err) => toast(ipcMessage(err))));
     el.importAll.addEventListener('click', () => importAll().catch((err) => toast(ipcMessage(err))));
-    window.api.appInfo().then((info) => { el.version.textContent = `Version ${info.version}`; }).catch(() => {});
     el.form.addEventListener('submit', (e) => {
       e.preventDefault();
       if (lookup) doAdd();

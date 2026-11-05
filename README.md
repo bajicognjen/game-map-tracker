@@ -111,6 +111,9 @@ instead. *Help → Check for updates…* or the button checks on demand.
 
 Only published releases are offered; a draft release is invisible to the update check.
 
+The running version is always on screen: top right of the Library, bottom of the map sidebar, and in the window
+title (`Game Map Tracker <version>`).
+
 ## Run from source
 
 ```bash
