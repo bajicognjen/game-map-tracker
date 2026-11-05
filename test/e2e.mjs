@@ -70,6 +70,30 @@ try {
   check('region label drawn', c.regionLabels === 1);
   check('progress starts at 0 / 5', c.progress === '0 / 5 found', c.progress);
 
+  // tracked categories: leave "Key" (2 markers) out of the progress total, then count it again
+  await page.evaluate(() => document.querySelector('[data-track="102"]').click());
+  await page.waitForTimeout(200);
+  check('untracking a category shrinks the progress total', (await page.evaluate(() => document.getElementById('progress-text').textContent)) === '0 / 3 found');
+  check('progress note offers to count all again', await page.evaluate(() => !document.getElementById('progress-note').classList.contains('hidden')));
+  await page.evaluate(() => document.querySelector('[data-track-all]').click());
+  await page.waitForTimeout(200);
+  check('count all restores the total', (await page.evaluate(() => document.getElementById('progress-text').textContent)) === '0 / 5 found');
+
+  // region filter: three markers are in "North"
+  await page.selectOption('#region-filter', '7');
+  await page.waitForTimeout(500);
+  check('region filter shows only that region', (await counts(page)).pins === 3, JSON.stringify(await counts(page)));
+  await page.selectOption('#region-filter', '');
+  await page.waitForTimeout(500);
+  check('clearing the region filter shows everything', (await counts(page)).pins === 5);
+
+  // next uncollected: jumps to a marker and opens its popup
+  await page.evaluate(() => document.getElementById('next-uncollected').click());
+  await page.waitForSelector('.mg-popup .pp-title', { timeout: 10000 });
+  check('next uncollected opens a popup', await page.evaluate(() => !!document.querySelector('.mg-popup .pp-title')));
+  await page.evaluate(() => document.querySelector('.leaflet-popup-close-button')?.click());
+  await page.waitForTimeout(300);
+
   // popup, collect, note
   await page.fill('#search', 'chest one');
   await page.waitForTimeout(400);
@@ -140,7 +164,8 @@ try {
   console.error(err);
   failures++;
 } finally {
-  fs.rmSync(userData, { recursive: true, force: true });
+  // Windows can hold file locks for a moment after the app exits
+  fs.rmSync(userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
 }
 console.log(failures ? `\n${failures} check(s) failed` : '\nAll checks passed');
 process.exit(failures ? 1 : 0);

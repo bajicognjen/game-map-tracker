@@ -250,3 +250,16 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   letter-spacing: .04em; text-transform: uppercase; text-shadow: 0 1px 3px #000, 0 0 8px #000; pointer-events: none;
 }
 .region-label::before { display: none; }
+
+/* ---------- 2.3 ---------- */
+.small-btn { padding: 3px 8px !important; font-size: 12px; white-space: nowrap; }
+#region-filter { padding: 3px 6px; font-size: 12px; max-width: 130px; }
+.track { background: none; border: none; cursor: pointer; color: #4a5560; font-size: 14px; line-height: 1; padding: 0 4px; flex: 0 0 auto; }
+.track.on { color: #ffd166; }
+.track:hover { color: #ffd166; }
+#progress-note { margin-top: 6px; }
+#progress-note .link { font-size: 12px; }
+#update-banner { flex-direction: column; align-items: stretch; max-width: 460px; }
+#update-notes { margin: 8px 0 0; padding: 8px 10px; max-height: 180px; overflow: auto; white-space: pre-wrap; font: 12px/1.4 inherit; font-family: inherit; background: var(--panel-2); border-radius: 6px; color: var(--muted); }
+.game-card .cover { width: 100%; height: 120px; object-fit: cover; border-radius: 6px; background: var(--panel-2); display: block; }
+.game-card .maps .detail { font-size: 11px; }

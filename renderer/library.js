@@ -3,7 +3,7 @@
 window.Library = (() => {
   const $ = (id) => document.getElementById(id);
   const el = {
-    form: $('add-form'), url: $('add-url'), submit: $('add-submit'), cancelBtn: $('cancel-btn'), status: $('add-status'),
+    form: $('add-form'), url: $('add-url'), submit: $('add-submit'), cancelBtn: $('cancel-btn'), stopBtn: $('stop-tiles-btn'), status: $('add-status'),
     plan: $('add-plan'), planTitle: $('plan-title'), planNote: $('plan-note'), planMaps: $('plan-maps'), planBack: $('plan-back'),
     tiles: $('add-tiles'), zoom: $('add-zoom'), media: $('add-media'),
     progress: $('add-progress'), fill: $('add-fill'), log: $('add-log'),
@@ -37,16 +37,24 @@ window.Library = (() => {
     const cards = [];
     for (const g of games) {
       const p = await progressFor(g);
-      const maps = g.maps.filter((m) => m.markerCount !== 0).map((m) => `
+      const maps = g.maps.filter((m) => m.markerCount !== 0).map((m) => {
+        const native = m.tiles.nativeMaxZoom || m.nativeMaxZoom || null;
+        const partial = m.tiles.available && native && m.tiles.maxZoom < native;
+        const tilesText = m.tiles.available
+          ? `offline tiles to zoom ${m.tiles.maxZoom}${native ? ` of ${native}` : ''}${m.tiles.bytes ? ` (${(m.tiles.bytes / 1048576).toFixed(0)} MB)` : ''}`
+          : 'online tiles';
+        return `
         <li>
           <div>
             <div class="name">${esc(m.title)}</div>
-            <div class="meta">${m.markerCount || 0} locations · ${m.tiles.available ? `offline tiles (zoom ${m.tiles.minZoom}–${m.tiles.maxZoom})` : 'online tiles'} · ${m.mediaCount} screenshots</div>
+            <div class="meta">${m.markerCount || 0} locations · ${tilesText} · ${m.mediaCount} screenshots${partial ? ` · <button type="button" class="link detail" data-detail="${esc(m.slug)}" title="Download the finer zoom levels">add detail</button>` : ''}</div>
           </div>
           <button type="button" class="btn" data-open="${esc(m.slug)}" ${m.ready ? '' : 'disabled'}>Open</button>
-        </li>`).join('');
+        </li>`;
+      }).join('');
       cards.push(`
         <article class="card game-card" data-game="${esc(g.slug)}" data-source="${esc(g.source)}">
+          ${g.cover ? `<img class="cover" src="gamemap://${esc(g.source)}/${esc(g.slug)}/${esc(g.cover)}" alt="">` : ''}
           <div class="row between">
             <h3 class="title">${esc(g.title)}</h3>
             ${g.source === 'bundled' ? '<span class="badge">bundled</span>' : ''}
@@ -104,6 +112,9 @@ window.Library = (() => {
       busy = false;
       el.submit.disabled = false;
       el.cancelBtn.classList.add('hidden');
+      el.stopBtn.classList.add('hidden');
+      el.stopBtn.disabled = false;
+      el.stopBtn.textContent = 'Stop tiles at this zoom';
       el.status.textContent = '';
     }
   }
@@ -136,6 +147,7 @@ window.Library = (() => {
         lastStage = p.stage;
         if (Number.isFinite(p.total) && p.total > 0) el.fill.style.width = `${Math.round((p.done / p.total) * 100)}%`;
         el.status.textContent = p.stage === 'done' ? '' : p.message;
+        el.stopBtn.classList.toggle('hidden', !(p.stage === 'tiles' && p.canStop));
       });
       try {
         const game = await window.api.addGame(input, opts);
@@ -218,6 +230,7 @@ window.Library = (() => {
     });
     el.planBack.addEventListener('click', () => { lookup = null; setPhase(); });
     el.cancelBtn.addEventListener('click', () => { el.cancelBtn.disabled = true; window.api.cancelJob().catch(() => {}); });
+    el.stopBtn.addEventListener('click', () => { el.stopBtn.disabled = true; el.stopBtn.textContent = 'Stopping after this zoom…'; window.api.stopTiles().catch(() => {}); });
     el.list.addEventListener('click', async (e) => {
       const btn = e.target.closest('button');
       const card = e.target.closest('.game-card');
@@ -229,6 +242,9 @@ window.Library = (() => {
       else if (btn.dataset.update) {
         if (!g || !g.sourceUrl) { toast('This game has no source link; remove it and add it again'); return; }
         runAdd(g.sourceUrl, g.importOptions || { tiles: true, media: true, zoomOffset: 0, maps: g.maps.map((m) => m.slug) });
+      } else if (btn.dataset.detail) {
+        if (!g || !g.sourceUrl) return;
+        runAdd(g.sourceUrl, { ...(g.importOptions || {}), tiles: true, zoomOffset: 0, maps: [btn.dataset.detail], media: !!(g.importOptions && g.importOptions.media) });
       } else if (btn.dataset.remove) {
         if (!window.confirm(`Remove ${g ? g.title : slug} and its downloaded tiles and screenshots? Your collected progress is kept.`)) return;
         try { await window.api.removeGame(slug); toast('Game removed'); } catch (err) { toast(ipcMessage(err)); }

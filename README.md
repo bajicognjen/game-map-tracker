@@ -34,6 +34,11 @@ location screenshots. Press **Add game**; progress is shown live and can be canc
 downloaded is kept, and a later **Update** resumes it with the same choices. Maps without any locations are
 skipped.
 
+While tiles download, the log shows how much has been fetched and an estimate of what the remaining zoom
+levels would add; **Stop tiles at this zoom** keeps what is done and skips the finer levels (the map simply
+shows less detail when zoomed in). The library lists each map's tile detail, with an **add detail** link
+that downloads the finer levels later.
+
 The same thing from a terminal (needs the source checkout):
 
 ```bash
@@ -65,6 +70,11 @@ packaged build; add `"games/**"` to `build.files` in `package.json` to include i
 - **Right-click an empty spot** to add your own marker (title, notes, collected state); they live in the
   "My markers" group at the top of the sidebar.
 - **Region outlines** with labels are drawn from the map's region data; untick "Regions" to hide them.
+  The region dropdown shows a single region's markers.
+- **Next uncollected** (button, or the `N` key) jumps to the nearest marker you have not collected yet,
+  within the current filters.
+- The **★** next to a category decides whether it counts toward the progress bar, so the bar can track
+  just the collectibles you care about.
 - Nearby markers are grouped into **clusters** at lower zooms (green when everything in them is collected);
   click a cluster to zoom in, or untick "Cluster nearby markers" to see every pin.
 - Category checkboxes filter the map; group checkboxes toggle a whole group. "Hide collected" hides what you have found.
@@ -100,9 +110,9 @@ npm run test:e2e
 ```
 
 Drives the real app with Playwright against a small generated game (`test/fixture.mjs`), with no network:
-library, map, popup, collecting, notes, a custom marker, region outlines, persistence across restarts and
-restoring from the backup file. It needs a display; CI runs it under `xvfb-run` on every push
-(`.github/workflows/ci.yml`).
+library, map, popup, collecting, tracked categories, the region filter, "next uncollected", notes, a custom
+marker, region outlines, persistence across restarts and restoring from the backup file. It needs a display;
+CI runs it on Linux (under `xvfb-run`), Windows and macOS on every push (`.github/workflows/ci.yml`).
 
 ## Layout
 

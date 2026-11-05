@@ -25,6 +25,7 @@
           <div class="row">
             <input id="add-url" type="text" placeholder="https://<site>/<game>   — link to the game's map page" spellcheck="false" required>
             <button type="submit" id="add-submit" class="primary">Look up</button>
+            <button type="button" id="stop-tiles-btn" class="hidden" title="Keep the tiles downloaded so far and skip the finer zoom levels">Stop tiles at this zoom</button>
             <button type="button" id="cancel-btn" class="hidden">Cancel</button>
           </div>
           <div id="add-plan" class="hidden">
@@ -83,6 +84,7 @@
           <span id="progress-pct">0%</span>
         </div>
         <div class="progress-bar"><div id="progress-fill"></div></div>
+        <div id="progress-note" class="muted small hidden"></div>
       </section>
 
       <section class="controls">
@@ -97,6 +99,11 @@
           <label class="chk"><input type="checkbox" id="cluster-markers" checked> Cluster nearby markers</label>
           <span class="spacer"></span>
           <label class="chk" id="region-outlines-label"><input type="checkbox" id="region-outlines" checked> Regions</label>
+        </div>
+        <div class="toggle-row">
+          <select id="region-filter" title="Show one region only"><option value="">All regions</option></select>
+          <span class="spacer"></span>
+          <button type="button" id="next-uncollected" class="btn small-btn" title="Jump to the nearest uncollected marker (N)">Next uncollected ▸</button>
         </div>
         <div id="visible-count" class="muted small"></div>
       </section>
@@ -115,9 +122,13 @@
   </section>
 
   <div id="update-banner" class="hidden" role="status">
-    <span id="update-text"></span>
-    <button type="button" id="update-action" class="btn primary"></button>
-    <button type="button" id="update-dismiss" class="link">Later</button>
+    <div class="row">
+      <span id="update-text"></span>
+      <button type="button" id="update-notes-toggle" class="link hidden">What's new</button>
+      <button type="button" id="update-action" class="btn primary"></button>
+      <button type="button" id="update-dismiss" class="link">Later</button>
+    </div>
+    <pre id="update-notes" class="hidden"></pre>
   </div>
   <div id="toast" role="status"></div>
 

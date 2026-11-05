@@ -80,7 +80,11 @@ function updateMode() {
 }
 let manualCheck = false;
 const updateStatus = (status, extra = {}) => send('update:status', { status, mode: updateMode(), manual: manualCheck, current: app.getVersion(), releasesUrl: repoUrl ? `${repoUrl}/releases` : null, ...extra });
-autoUpdater.on('update-available', (info) => updateStatus('available', { version: info.version }));
+const notesText = (notes) => {
+  const raw = Array.isArray(notes) ? notes.map((n) => (n && n.note) || '').join('\n') : String(notes || '');
+  return raw.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/[ \t]+/g, ' ').replace(/\s*\n\s*/g, '\n').trim().slice(0, 1200);
+};
+autoUpdater.on('update-available', (info) => updateStatus('available', { version: info.version, notes: notesText(info.releaseNotes) }));
 autoUpdater.on('update-not-available', () => updateStatus('none'));
 autoUpdater.on('download-progress', (p) => updateStatus('downloading', { percent: Math.round(p.percent) }));
 autoUpdater.on('update-downloaded', (info) => updateStatus('downloaded', { version: info.version }));
@@ -128,16 +132,17 @@ function buildMenu() {
 ipcMain.handle('app:info', () => ({ version: app.getVersion(), updateMode: updateMode(), releasesUrl: repoUrl ? `${repoUrl}/releases` : null }));
 ipcMain.handle('library:list', () => library.listGames());
 
-let jobController = null; // one lookup or add at a time
+let job = null; // one lookup or add at a time: { controller, stopTiles }
 async function runJob(event, fn) {
-  if (jobController) throw new Error('Another download is running — wait for it to finish or cancel it');
-  jobController = new AbortController();
+  if (job) throw new Error('Another download is running — wait for it to finish or cancel it');
+  job = { controller: new AbortController(), stopTiles: false };
+  const current = job;
   const sender = event.sender;
   const onProgress = (p) => { if (!sender.isDestroyed()) sender.send('library:progress', p); };
   try {
-    return await fn(onProgress, jobController.signal);
+    return await fn(onProgress, current.controller.signal, () => current.stopTiles);
   } finally {
-    jobController = null;
+    job = null;
   }
 }
 const cleanOpts = (opts) => ({
@@ -147,8 +152,9 @@ const cleanOpts = (opts) => ({
   zoomOffset: opts && Number.isFinite(Number(opts.zoomOffset)) ? Math.max(0, Math.min(4, Number(opts.zoomOffset))) : 0,
 });
 ipcMain.handle('library:lookup', (event, input) => runJob(event, (onProgress, signal) => library.lookupGame(String(input || ''), onProgress, signal)));
-ipcMain.handle('library:add', (event, input, opts) => runJob(event, (onProgress, signal) => library.addGame(String(input || ''), cleanOpts(opts), onProgress, signal)));
-ipcMain.handle('library:cancel', () => { if (jobController) jobController.abort(); return true; });
+ipcMain.handle('library:add', (event, input, opts) => runJob(event, (onProgress, signal, shouldStop) => library.addGame(String(input || ''), { ...cleanOpts(opts), shouldStop }, onProgress, signal)));
+ipcMain.handle('library:cancel', () => { if (job) job.controller.abort(); return true; });
+ipcMain.handle('library:stop-tiles', () => { if (job) job.stopTiles = true; return true; });
 ipcMain.handle('library:remove', (event, slug) => library.removeGame(paths.assertSlug(slug, 'game slug')));
 ipcMain.handle('map:load', (event, src, gameSlug, mapSlug) => library.loadMap(String(src), gameSlug, mapSlug));
 

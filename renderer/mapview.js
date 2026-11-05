@@ -15,7 +15,8 @@ window.MapView = (() => {
   const $ = (id) => document.getElementById(id);
   const el = {
     back: $('back-library'), gameTitle: $('game-title'), mapSelect: $('map-select'), mapTitle: $('map-title'),
-    progressText: $('progress-text'), progressPct: $('progress-pct'), progressFill: $('progress-fill'),
+    progressText: $('progress-text'), progressPct: $('progress-pct'), progressFill: $('progress-fill'), progressNote: $('progress-note'),
+    regionFilter: $('region-filter'), nextBtn: $('next-uncollected'),
     search: $('search'), hideCollected: $('hide-collected'), showAll: $('show-all'), hideAll: $('hide-all'),
     cluster: $('cluster-markers'), regions: $('region-outlines'), regionsLabel: $('region-outlines-label'),
     visibleCount: $('visible-count'), categories: $('categories'), results: $('search-results'),
@@ -75,11 +76,21 @@ window.MapView = (() => {
     el.back.addEventListener('click', () => onBack());
     el.mapSelect.addEventListener('change', () => { if (view) open(view.source, view.gameSlug, el.mapSelect.value).catch((e) => toast(ipcMessage(e))); });
     el.categories.addEventListener('change', (e) => view && view.onCategoryChange(e));
+    el.categories.addEventListener('click', (e) => { const b = e.target.closest('[data-track]'); if (b && view) { e.preventDefault(); view.toggleTracked(Number(b.dataset.track)); } });
     el.showAll.addEventListener('click', () => view && view.showAll());
     el.hideAll.addEventListener('click', () => view && view.hideAll());
     el.hideCollected.addEventListener('change', () => view && view.setHideCollected(el.hideCollected.checked));
     el.cluster.addEventListener('change', () => view && view.setClustering(el.cluster.checked));
     el.regions.addEventListener('change', () => view && view.setRegions(el.regions.checked));
+    el.regionFilter.addEventListener('change', () => view && view.setRegionFilter(el.regionFilter.value));
+    el.nextBtn.addEventListener('click', () => view && view.nextUncollected());
+    el.progressNote.addEventListener('click', (e) => { if (e.target.closest('[data-track-all]') && view) view.trackAll(); });
+    document.addEventListener('keydown', (e) => {
+      if (!view || e.ctrlKey || e.metaKey || e.altKey) return;
+      const tag = (e.target && e.target.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
+      if (e.key === 'n' || e.key === 'N') { e.preventDefault(); view.nextUncollected(); }
+    });
     el.search.addEventListener('input', debounce(() => view && view.setSearch(el.search.value), 120));
     el.search.addEventListener('keydown', (e) => {
       if (!view) return;
@@ -151,6 +162,8 @@ window.MapView = (() => {
       hideCollected: !!(await get('hideCollected', false)),
       cluster: !!(await get('cluster', true)),
       regions: !!(await get('regions', true)),
+      tracked: await get('trackedCategories', null), // null = every category counts toward progress
+      region: await get('regionFilter', null),
       view: await get('view', null),
       search: '',
     };
@@ -172,8 +185,11 @@ window.MapView = (() => {
       hideCollected: () => store.setItem('hideCollected', state.hideCollected),
       cluster: () => store.setItem('cluster', state.cluster),
       regions: () => store.setItem('regions', state.regions),
+      tracked: () => store.setItem('trackedCategories', state.tracked),
+      region: () => store.setItem('regionFilter', state.region),
       view: () => store.setItem('view', state.view),
     };
+    const isTracked = (categoryId) => categoryId !== CUSTOM && (!state.tracked || state.tracked.includes(categoryId));
     let restoredFromBackup = false;
     if (!Object.keys(state.collected).length && !Object.keys(state.notes).length && !state.custom.length) {
       try {
@@ -195,6 +211,13 @@ window.MapView = (() => {
     el.hideCollected.checked = state.hideCollected;
     el.cluster.checked = state.cluster;
     el.regions.checked = state.regions;
+    // region filter: only regions that actually have markers
+    const regionCounts = new Map();
+    for (const m of data.markers) if (m.regionId != null) regionCounts.set(m.regionId, (regionCounts.get(m.regionId) || 0) + 1);
+    const regionOptions = data.regions.filter((r) => regionCounts.get(r.id)).sort((a, b) => a.title.localeCompare(b.title));
+    if (state.region != null && !regionCounts.get(state.region)) state.region = null;
+    el.regionFilter.innerHTML = '<option value="">All regions</option>' + regionOptions.map((r) => `<option value="${r.id}"${state.region === r.id ? ' selected' : ''}>${esc(r.title)} (${regionCounts.get(r.id)})</option>`).join('');
+    el.regionFilter.classList.toggle('hidden', regionOptions.length < 1);
 
     const customCategory = { id: CUSTOM, groupId: CUSTOM, title: 'My markers', icon: null, info: 'Your own markers — right-click the map to add one', count: 0 };
     const categoriesById = new Map(data.categories.map((c) => [c.id, c]));
@@ -349,7 +372,6 @@ window.MapView = (() => {
       if (category) makeEntry(m, category);
     }
     for (const c of state.custom) makeEntry(Object.assign(c, { categoryId: CUSTOM, media: [] }), customCategory);
-    const siteTotal = [...entries.keys()].filter((id) => !isCustomId(id)).length;
 
     // Markers sit in a cluster group (or a plain group when clustering is off). Only the
     // visible, filtered markers are in the group; clusters are rebuilt from those.
@@ -391,7 +413,23 @@ window.MapView = (() => {
     function isVisible(entry) {
       if (state.hidden.has(entry.data.categoryId)) return false;
       if (state.hideCollected && isCollected(entry.data.id)) return false;
+      if (state.region != null && entry.data.categoryId !== CUSTOM && entry.data.regionId !== state.region) return false;
       return matchesSearch(entry);
+    }
+    let lastNextId = null;
+    function nextUncollected() {
+      const c = map.getCenter();
+      let best = null;
+      let bestDist = Infinity;
+      for (const entry of entries.values()) {
+        if (!isVisible(entry) || isCollected(entry.data.id)) continue;
+        if (entry.data.id === lastNextId && entry.marker.isPopupOpen()) continue;
+        const d = (entry.data.x - c.lng) ** 2 + (entry.data.y - c.lat) ** 2;
+        if (d < bestDist) { bestDist = d; best = entry; }
+      }
+      if (!best) { toast(state.region != null || state.hidden.size || state.search ? 'Nothing uncollected left in the current filters' : 'Everything on this map is collected'); return; }
+      lastNextId = best.data.id;
+      focusMarker(best.data.id);
     }
     function applyFilters() {
       const add = [];
@@ -582,9 +620,27 @@ window.MapView = (() => {
             ${smallIcon(c)}
             <span class="cat-title" title="${esc(c.info || c.title)}">${esc(c.title)}</span>
           </label>
+          <button type="button" class="track${isTracked(c.id) ? ' on' : ''}" data-track="${c.id}" title="${isTracked(c.id) ? 'Counts toward progress — click to leave it out' : 'Not counted toward progress — click to count it'}">★</button>
           <span class="count" data-cat-count="${c.id}"></span>
         </li>`;
     }
+    function syncTrackUI() {
+      for (const b of el.categories.querySelectorAll('[data-track]')) {
+        const on = isTracked(Number(b.dataset.track));
+        b.classList.toggle('on', on);
+        b.title = on ? 'Counts toward progress — click to leave it out' : 'Not counted toward progress — click to count it';
+      }
+    }
+    function toggleTracked(categoryId) {
+      const all = data.categories.map((c) => c.id);
+      const current = state.tracked ? [...state.tracked] : all;
+      const next = current.includes(categoryId) ? current.filter((id) => id !== categoryId) : [...current, categoryId];
+      state.tracked = next.length === all.length ? null : next;
+      persist.tracked();
+      syncTrackUI();
+      renderProgress();
+    }
+    function trackAll() { state.tracked = null; persist.tracked(); syncTrackUI(); renderProgress(); }
     function renderCategories() {
       const sections = [`
         <section class="group custom-group">
@@ -662,11 +718,20 @@ window.MapView = (() => {
       }
     }
     function renderProgress() {
-      const found = Object.keys(state.collected).filter((id) => !isCustomId(id) && entries.has(Number(id))).length;
-      const pct = siteTotal ? Math.round((found / siteTotal) * 100) : 0;
-      el.progressText.textContent = `${found} / ${siteTotal} found`;
+      let total = 0;
+      let found = 0;
+      for (const entry of entries.values()) {
+        if (isCustomId(entry.data.id) || !isTracked(entry.data.categoryId)) continue;
+        total++;
+        if (isCollected(entry.data.id)) found++;
+      }
+      const pct = total ? Math.round((found / total) * 100) : 0;
+      el.progressText.textContent = `${found} / ${total} found`;
       el.progressPct.textContent = `${pct}%`;
       el.progressFill.style.width = `${pct}%`;
+      const trackedCount = state.tracked ? state.tracked.length : data.categories.length;
+      el.progressNote.classList.toggle('hidden', !state.tracked);
+      if (state.tracked) el.progressNote.innerHTML = `${trackedCount} of ${data.categories.length} categories counted (★ in the list) · <button type="button" class="link" data-track-all="1">count all</button>`;
       renderCounts();
     }
 
@@ -700,6 +765,10 @@ window.MapView = (() => {
       setHideCollected(value) { state.hideCollected = !!value; persist.hideCollected(); applyFilters(); },
       setClustering,
       setRegions,
+      setRegionFilter(value) { state.region = value === '' ? null : Number(value); persist.region(); applyFilters(); if (state.search) renderResults(); },
+      nextUncollected,
+      toggleTracked,
+      trackAll,
       setSearch(value) { state.search = String(value).trim().toLowerCase(); applyFilters(); renderResults(); },
       onMapClick(e) {
         const t = e.target.closest('[data-toggle],[data-goto],[data-ext],[data-add-custom],[data-delete-custom],.pp-media.spoiler');

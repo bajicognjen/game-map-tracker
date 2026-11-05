@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('api', {
   lookupGame: (input) => ipcRenderer.invoke('library:lookup', input),
   addGame: (input, opts) => ipcRenderer.invoke('library:add', input, opts),
   cancelJob: () => ipcRenderer.invoke('library:cancel'),
+  stopTiles: () => ipcRenderer.invoke('library:stop-tiles'),
   removeGame: (slug) => ipcRenderer.invoke('library:remove', slug),
   onJobProgress: (callback) => listen('library:progress', callback),
   onMenu: (callback) => listen('menu', callback),
