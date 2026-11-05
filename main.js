@@ -116,6 +116,7 @@ function buildMenu() {
       submenu: [
         { label: 'Check for updates…', click: () => checkForUpdates(true) },
         { label: 'Show game data folder', click: () => { fs.mkdirSync(paths.userGamesDir(), { recursive: true }); shell.openPath(paths.userGamesDir()); } },
+        { label: 'Show progress backups folder', click: () => { fs.mkdirSync(paths.backupsDir(), { recursive: true }); shell.openPath(paths.backupsDir()); } },
         ...(repoUrl ? [{ label: 'Project page', click: () => shell.openExternal(repoUrl) }] : []),
       ],
     },
@@ -150,6 +151,20 @@ ipcMain.handle('library:add', (event, input, opts) => runJob(event, (onProgress,
 ipcMain.handle('library:cancel', () => { if (jobController) jobController.abort(); return true; });
 ipcMain.handle('library:remove', (event, slug) => library.removeGame(paths.assertSlug(slug, 'game slug')));
 ipcMain.handle('map:load', (event, src, gameSlug, mapSlug) => library.loadMap(String(src), gameSlug, mapSlug));
+
+// Progress backups: a JSON copy of each map's collected/notes/custom markers next to the games,
+// written by the renderer after every change, restored when the in-app database is empty.
+const backupFile = (gameSlug, mapSlug) => path.join(paths.backupsDir(), paths.assertSlug(gameSlug, 'game slug'), `${paths.assertSlug(mapSlug, 'map slug')}.json`);
+ipcMain.handle('backup:write', (event, gameSlug, mapSlug, json) => {
+  const file = backupFile(gameSlug, mapSlug);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, String(json));
+  return true;
+});
+ipcMain.handle('backup:read', (event, gameSlug, mapSlug) => {
+  const file = backupFile(gameSlug, mapSlug);
+  return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
+});
 
 ipcMain.handle('update:check', () => { checkForUpdates(true); return true; });
 ipcMain.handle('update:download', () => { autoUpdater.downloadUpdate().catch(() => {}); return true; });

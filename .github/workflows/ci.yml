@@ -1,0 +1,22 @@
+# Syntax check and an offline end-to-end run of the real app on every push and pull request.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Syntax check
+        run: for f in main.js preload.js lib/*.js renderer/*.js scripts/*.js; do node --check "$f"; done
+      - name: End-to-end test
+        run: xvfb-run -a npm run test:e2e

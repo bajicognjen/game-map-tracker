@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld('api', {
   downloadUpdate: () => ipcRenderer.invoke('update:download'),
   installUpdate: () => ipcRenderer.invoke('update:install'),
   onUpdateStatus: (callback) => listen('update:status', callback),
+  writeBackup: (gameSlug, mapSlug, json) => ipcRenderer.invoke('backup:write', gameSlug, mapSlug, json),
+  readBackup: (gameSlug, mapSlug) => ipcRenderer.invoke('backup:read', gameSlug, mapSlug),
   exportProgress: (json, suggestedName) => ipcRenderer.invoke('progress:export', json, suggestedName),
   importProgress: () => ipcRenderer.invoke('progress:import'),
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),

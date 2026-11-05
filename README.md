@@ -8,6 +8,10 @@ connection needed afterwards.
 The app downloads map data only when you ask it to, for your personal use. It is not affiliated with any
 map site; please respect the terms of the site you use and keep the downloads to what you actually play.
 
+![Library screen](docs/screenshot-library.jpg)
+![Map with region outlines and clusters](docs/screenshot-map.jpg)
+![Location popup with notes](docs/screenshot-popup.jpg)
+
 ## Download
 
 Prebuilt builds are on the [Releases page](https://github.com/bajicognjen/game-map-tracker/releases):
@@ -56,13 +60,20 @@ packaged build; add `"games/**"` to `build.files` in `package.json` to include i
 - **Click** a marker to see its category, region, notes and screenshot.
 - **Right-click** a marker, or press the button in its popup, to toggle *collected*.
 - Links in notes that point at other locations jump straight to that marker.
-- **Search** lists matching locations (title, notes, category) in the sidebar; click one, or press Enter, to jump to it.
+- **Search** lists matching locations (title, notes, category, your own notes) in the sidebar; click one, or press Enter, to jump to it.
+- Every popup has a **notes** field for your own remarks; notes are searchable.
+- **Right-click an empty spot** to add your own marker (title, notes, collected state); they live in the
+  "My markers" group at the top of the sidebar.
+- **Region outlines** with labels are drawn from the map's region data; untick "Regions" to hide them.
 - Nearby markers are grouped into **clusters** at lower zooms (green when everything in them is collected);
   click a cluster to zoom in, or untick "Cluster nearby markers" to see every pin.
 - Category checkboxes filter the map; group checkboxes toggle a whole group. "Hide collected" hides what you have found.
 - Maps of the same game are switched with the dropdown in the sidebar header.
-- Progress is stored locally per map (IndexedDB via LocalForage) and survives removing and re-adding a game.
-  **Export** / **Import** write and read a portable JSON file.
+- Progress, notes and your own markers are stored locally per map (IndexedDB via LocalForage), survive
+  removing and re-adding a game, and are mirrored to JSON files in the user-data folder after every change
+  (*Help → Show progress backups folder*). If the in-app database is ever lost, the backup is restored
+  automatically. **Export** / **Import** in the sidebar handle one map; **Export all progress** / **Import**
+  on the Library screen handle every game in one file.
 
 ## Updates
 
@@ -82,6 +93,17 @@ Requires Node 22+ (Electron 45 needs it). If `npm start` complains that
 `node_modules/electron/dist/electron` is missing, the Electron binary download was skipped during install;
 fetch it with `node node_modules/electron/install.js`.
 
+## Tests
+
+```bash
+npm run test:e2e
+```
+
+Drives the real app with Playwright against a small generated game (`test/fixture.mjs`), with no network:
+library, map, popup, collecting, notes, a custom marker, region outlines, persistence across restarts and
+restoring from the backup file. It needs a display; CI runs it under `xvfb-run` on every push
+(`.github/workflows/ci.yml`).
+
 ## Layout
 
 ```
@@ -98,6 +120,8 @@ lib/tiles.js         tile pyramid downloader that skips blank quadrants; resumab
 lib/media.js         screenshot downloader
 lib/library.js       list / look up / add / update / remove games; load a map for the renderer
 scripts/add-game.js  command-line front end for lib/library.js
+test/fixture.mjs     generates an offline game for the end-to-end test
+test/e2e.mjs         the end-to-end test
 ```
 
 ## How the coordinates work

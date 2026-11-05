@@ -8,6 +8,7 @@ window.Library = (() => {
     tiles: $('add-tiles'), zoom: $('add-zoom'), media: $('add-media'),
     progress: $('add-progress'), fill: $('add-fill'), log: $('add-log'),
     list: $('game-list'), empty: $('lib-empty'), version: $('app-version'), checkUpdates: $('check-updates'),
+    exportAll: $('export-all'), importAll: $('import-all'),
   };
   let onOpen = () => {};
   let games = [];
@@ -161,8 +162,50 @@ window.Library = (() => {
     await runAdd(input, opts);
   }
 
+  const mapStore = (mapId) => localforage.createInstance({ name: `game-map-tracker-map-${mapId}` });
+
+  async function exportAll() {
+    const maps = [];
+    for (const g of games) {
+      for (const m of g.maps) {
+        const s = mapStore(m.id);
+        maps.push({ game: g.slug, map: m.slug, mapId: m.id, collected: (await s.getItem('collected')) || {}, notes: (await s.getItem('notes')) || {}, custom: (await s.getItem('custom')) || [] });
+      }
+    }
+    const payload = { app: 'game-map-tracker', kind: 'all', exportedAt: new Date().toISOString(), maps };
+    const ok = await window.api.exportProgress(JSON.stringify(payload, null, 2), 'game-map-tracker-progress.json');
+    if (ok) toast(`Exported progress for ${maps.length} map${maps.length === 1 ? '' : 's'}`);
+  }
+
+  async function importAll() {
+    const text = await window.api.importProgress();
+    if (!text) return;
+    let parsed;
+    try { parsed = JSON.parse(text); } catch { toast('That file is not a progress export'); return; }
+    const list = parsed && Array.isArray(parsed.maps) ? parsed.maps : (parsed && parsed.mapId ? [parsed] : []);
+    if (!list.length) { toast('That file has no progress in it'); return; }
+    let touched = 0;
+    for (const one of list) {
+      const owner = games.find((g) => g.maps.some((m) => m.id === one.mapId));
+      const mapMeta = owner && owner.maps.find((m) => m.id === one.mapId);
+      if (!mapMeta) continue;
+      const s = mapStore(one.mapId);
+      const collected = Object.assign((await s.getItem('collected')) || {}, (one.collected && typeof one.collected === 'object') ? one.collected : {});
+      const notes = Object.assign((await s.getItem('notes')) || {}, (one.notes && typeof one.notes === 'object') ? one.notes : {});
+      const custom = (await s.getItem('custom')) || [];
+      for (const c of Array.isArray(one.custom) ? one.custom : []) if (c && c.id && !custom.some((x) => x.id === c.id)) custom.push(c);
+      await s.setItem('collected', collected); await s.setItem('notes', notes); await s.setItem('custom', custom);
+      window.api.writeBackup(owner.slug, mapMeta.slug, JSON.stringify({ app: 'game-map-tracker', game: owner.slug, map: mapMeta.slug, mapId: one.mapId, savedAt: new Date().toISOString(), collected, notes, custom })).catch(() => {});
+      touched++;
+    }
+    toast(touched ? `Imported progress for ${touched} map${touched === 1 ? '' : 's'}` : 'None of the maps in that file are installed');
+    await refresh();
+  }
+
   function init(opts) {
     onOpen = opts.onOpen || onOpen;
+    el.exportAll.addEventListener('click', () => exportAll().catch((err) => toast(ipcMessage(err))));
+    el.importAll.addEventListener('click', () => importAll().catch((err) => toast(ipcMessage(err))));
     window.api.appInfo().then((info) => { el.version.textContent = `Version ${info.version}`; }).catch(() => {});
     el.checkUpdates.addEventListener('click', () => window.api.checkForUpdates());
     el.form.addEventListener('submit', (e) => {

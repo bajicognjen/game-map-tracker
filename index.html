@@ -16,7 +16,7 @@
       <header class="lib-header">
         <h1>Game Map Tracker</h1>
         <p class="muted">Offline interactive maps with collectible tracking. Paste the link to a game's interactive map page to add it, then open its maps.</p>
-        <p class="muted small"><span id="app-version"></span> · <button type="button" id="check-updates" class="link">Check for updates</button></p>
+        <p class="muted small"><span id="app-version"></span> · <button type="button" id="check-updates" class="link">Check for updates</button> · progress is backed up automatically (Help → Show progress backups folder)</p>
       </header>
 
       <section class="card lib-add">
@@ -52,7 +52,13 @@
       </section>
 
       <section class="lib-games">
-        <h2>Your games</h2>
+        <div class="row between lib-games-head">
+          <h2>Your games</h2>
+          <div class="row">
+            <button type="button" id="export-all" class="btn" title="Collected markers, notes and your own markers for every game, in one file">Export all progress</button>
+            <button type="button" id="import-all" class="btn">Import</button>
+          </div>
+        </div>
         <p id="lib-empty" class="muted hidden">No games yet. Paste a game's map link above to add one.</p>
         <div id="game-list" class="cards"></div>
       </section>
@@ -90,8 +96,9 @@
         <div class="toggle-row">
           <label class="chk"><input type="checkbox" id="cluster-markers" checked> Cluster nearby markers</label>
           <span class="spacer"></span>
-          <span id="visible-count" class="muted small"></span>
+          <label class="chk" id="region-outlines-label"><input type="checkbox" id="region-outlines" checked> Regions</label>
         </div>
+        <div id="visible-count" class="muted small"></div>
       </section>
 
       <div id="search-results" class="hidden"></div>

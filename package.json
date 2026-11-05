@@ -1,6 +1,6 @@
 {
   "name": "game-map-tracker",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Offline interactive game maps with collectible tracking. Add a game from its map page, track your progress, no account or limits.",
   "author": "Ognjen Bajic",
   "license": "MIT",
@@ -13,7 +13,8 @@
     "build": "electron-builder --publish never",
     "build:linux": "electron-builder --linux AppImage --publish never",
     "build:win": "electron-builder --win --publish never",
-    "build:mac": "electron-builder --mac --publish never"
+    "build:mac": "electron-builder --mac --publish never",
+    "test:e2e": "node test/e2e.mjs"
   },
   "engines": {
     "node": ">=22.12.0"
@@ -26,7 +27,8 @@
   },
   "devDependencies": {
     "electron": "^45.2.3",
-    "electron-builder": "^26.18.0"
+    "electron-builder": "^26.18.0",
+    "playwright-core": "^1.50.0"
   },
   "build": {
     "appId": "local.game-map-tracker",

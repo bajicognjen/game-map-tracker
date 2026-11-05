@@ -223,3 +223,30 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   background: var(--panel); border: 1px solid var(--accent); border-radius: 8px; padding: 10px 14px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, .6);
 }
+
+/* ---------- 2.2: notes, custom markers, regions ---------- */
+.lib-games-head { margin-bottom: 12px; }
+.lib-games-head h2 { margin: 0; }
+.pp-notes, .pp-input {
+  width: 100%; margin: 4px 0 8px; padding: 6px 8px; font: inherit; font-size: 13px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); resize: vertical;
+}
+.pp-notes:focus, .pp-input:focus { outline: none; border-color: var(--accent); }
+.pp-custom .pp-input { font-weight: 600; font-size: 15px; }
+.pp-meta.row { gap: 8px; }
+.pp-meta .link { font-size: 11px; }
+.mg-add .leaflet-popup-content { margin: 8px; }
+.custom-dot { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #ffb347; color: #3a2a00; font-size: 10px; font-weight: 700; flex: 0 0 auto; }
+.custom-group .hint { padding: 0 16px 6px 42px; }
+.mg-pin.custom { width: 30px; height: 30px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .7)); }
+.custom-pin {
+  display: flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+  border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+  background: #ffb347; border: 2px solid #3a2a00;
+}
+.custom-pin::after { content: "★"; transform: rotate(45deg); color: #3a2a00; font-size: 13px; font-weight: 700; }
+.region-label {
+  background: none; border: none; box-shadow: none; color: #e6edf3; font-weight: 700; font-size: 13px;
+  letter-spacing: .04em; text-transform: uppercase; text-shadow: 0 1px 3px #000, 0 0 8px #000; pointer-events: none;
+}
+.region-label::before { display: none; }
