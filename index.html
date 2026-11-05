@@ -6,6 +6,7 @@
         content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: gamemap: https:; connect-src 'self'">
   <title>Game Map Tracker</title>
   <link rel="stylesheet" href="node_modules/leaflet/dist/leaflet.css">
+  <link rel="stylesheet" href="node_modules/leaflet.markercluster/dist/MarkerCluster.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -15,21 +16,34 @@
       <header class="lib-header">
         <h1>Game Map Tracker</h1>
         <p class="muted">Offline interactive maps with collectible tracking. Paste the link to a game's interactive map page to add it, then open its maps.</p>
+        <p class="muted small"><span id="app-version"></span> · <button type="button" id="check-updates" class="link">Check for updates</button></p>
       </header>
 
       <section class="card lib-add">
         <h2>Add a game</h2>
         <form id="add-form" autocomplete="off">
-          <input id="add-url" type="text" placeholder="https://<site>/<game>   — link to the game's map page" spellcheck="false" required>
-          <div class="row wrap">
-            <label class="chk"><input type="checkbox" id="add-tiles" checked> Download map tiles for offline use</label>
-            <label class="chk"><input type="checkbox" id="add-media" checked> Download location screenshots</label>
-          </div>
           <div class="row">
-            <button type="submit" id="add-btn" class="primary">Add game</button>
+            <input id="add-url" type="text" placeholder="https://<site>/<game>   — link to the game's map page" spellcheck="false" required>
+            <button type="submit" id="add-submit" class="primary">Look up</button>
             <button type="button" id="cancel-btn" class="hidden">Cancel</button>
-            <span id="add-status" class="muted small"></span>
           </div>
+          <div id="add-plan" class="hidden">
+            <div class="row between">
+              <div><strong id="plan-title"></strong> <span id="plan-note" class="muted small"></span></div>
+              <button type="button" id="plan-back" class="link">Change link</button>
+            </div>
+            <div id="plan-maps" class="plan-maps"></div>
+            <div class="row wrap">
+              <label class="chk"><input type="checkbox" id="add-tiles" checked> Map tiles for offline use,</label>
+              <select id="add-zoom" title="How much tile detail to download">
+                <option value="0">full detail</option>
+                <option value="1">one zoom level less (about ¼ the size)</option>
+                <option value="2">two levels less (about 1/16 the size)</option>
+              </select>
+              <label class="chk"><input type="checkbox" id="add-media" checked> Location screenshots</label>
+            </div>
+          </div>
+          <span id="add-status" class="muted small"></span>
         </form>
         <div id="add-progress" class="hidden">
           <div class="progress-bar"><div id="add-fill"></div></div>
@@ -73,9 +87,14 @@
           <button type="button" id="show-all" class="link">Show all</button>
           <button type="button" id="hide-all" class="link">Hide all</button>
         </div>
-        <div id="visible-count" class="muted small"></div>
+        <div class="toggle-row">
+          <label class="chk"><input type="checkbox" id="cluster-markers" checked> Cluster nearby markers</label>
+          <span class="spacer"></span>
+          <span id="visible-count" class="muted small"></span>
+        </div>
       </section>
 
+      <div id="search-results" class="hidden"></div>
       <nav id="categories" aria-label="Category filters"></nav>
 
       <footer class="sidebar-footer">
@@ -88,9 +107,15 @@
     <main id="map" role="application" aria-label="Map"></main>
   </section>
 
+  <div id="update-banner" class="hidden" role="status">
+    <span id="update-text"></span>
+    <button type="button" id="update-action" class="btn primary"></button>
+    <button type="button" id="update-dismiss" class="link">Later</button>
+  </div>
   <div id="toast" role="status"></div>
 
   <script src="node_modules/leaflet/dist/leaflet.js"></script>
+  <script src="node_modules/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
   <script src="node_modules/localforage/dist/localforage.min.js"></script>
   <script src="renderer/mapview.js"></script>
   <script src="renderer/library.js"></script>

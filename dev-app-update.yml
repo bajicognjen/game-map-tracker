@@ -1,0 +1,4 @@
+# Used only when GMT_DEV_UPDATE=1 is set while running from source, to try the update check.
+provider: github
+owner: bajicognjen
+repo: game-map-tracker

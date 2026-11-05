@@ -2,18 +2,26 @@
 // Bridge between the sandboxed page and the main process. Only these functions are exposed.
 const { contextBridge, ipcRenderer } = require('electron');
 
+const listen = (channel, callback) => {
+  const handler = (_event, payload) => callback(payload);
+  ipcRenderer.on(channel, handler);
+  return () => ipcRenderer.removeListener(channel, handler);
+};
+
 contextBridge.exposeInMainWorld('api', {
+  appInfo: () => ipcRenderer.invoke('app:info'),
   listGames: () => ipcRenderer.invoke('library:list'),
+  lookupGame: (input) => ipcRenderer.invoke('library:lookup', input),
   addGame: (input, opts) => ipcRenderer.invoke('library:add', input, opts),
-  cancelAdd: () => ipcRenderer.invoke('library:cancel'),
+  cancelJob: () => ipcRenderer.invoke('library:cancel'),
   removeGame: (slug) => ipcRenderer.invoke('library:remove', slug),
-  onAddProgress: (callback) => {
-    const handler = (_event, progress) => callback(progress);
-    ipcRenderer.on('library:progress', handler);
-    return () => ipcRenderer.removeListener('library:progress', handler);
-  },
-  onMenu: (callback) => ipcRenderer.on('menu', (_event, action) => callback(action)),
+  onJobProgress: (callback) => listen('library:progress', callback),
+  onMenu: (callback) => listen('menu', callback),
   loadMap: (source, gameSlug, mapSlug) => ipcRenderer.invoke('map:load', source, gameSlug, mapSlug),
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  downloadUpdate: () => ipcRenderer.invoke('update:download'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
+  onUpdateStatus: (callback) => listen('update:status', callback),
   exportProgress: (json, suggestedName) => ipcRenderer.invoke('progress:export', json, suggestedName),
   importProgress: () => ipcRenderer.invoke('progress:import'),
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),

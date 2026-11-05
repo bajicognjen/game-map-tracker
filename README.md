@@ -23,10 +23,12 @@ Prebuilt builds are on the [Releases page](https://github.com/bajicognjen/game-m
 ## Adding games
 
 In the app, open the **Library** (the start screen, or `Ctrl+L`), paste the link to the game's map page
-(`https://<site>/<game>` or `https://<site>/<game>/maps/<map>`) and press **Add game**. The app reads every
-map of that game, downloads the marker icons, and — if the boxes are ticked — the map tiles for offline use
-and the location screenshots. Progress is shown live and can be cancelled; whatever was downloaded is kept and
-a later **Update** resumes it.
+(`https://<site>/<game>` or `https://<site>/<game>/maps/<map>`) and press **Look up**. The app reads the
+game's map list and lets you pick which maps to add, whether to download the map tiles for offline use (and
+at what detail — each zoom level less is roughly a quarter of the size), and whether to download the
+location screenshots. Press **Add game**; progress is shown live and can be cancelled, whatever was
+downloaded is kept, and a later **Update** resumes it with the same choices. Maps without any locations are
+skipped.
 
 The same thing from a terminal (needs the source checkout):
 
@@ -54,10 +56,20 @@ packaged build; add `"games/**"` to `build.files` in `package.json` to include i
 - **Click** a marker to see its category, region, notes and screenshot.
 - **Right-click** a marker, or press the button in its popup, to toggle *collected*.
 - Links in notes that point at other locations jump straight to that marker.
+- **Search** lists matching locations (title, notes, category) in the sidebar; click one, or press Enter, to jump to it.
+- Nearby markers are grouped into **clusters** at lower zooms (green when everything in them is collected);
+  click a cluster to zoom in, or untick "Cluster nearby markers" to see every pin.
 - Category checkboxes filter the map; group checkboxes toggle a whole group. "Hide collected" hides what you have found.
 - Maps of the same game are switched with the dropdown in the sidebar header.
 - Progress is stored locally per map (IndexedDB via LocalForage) and survives removing and re-adding a game.
   **Export** / **Import** write and read a portable JSON file.
+
+## Updates
+
+The installed app checks for a new release on start-up and offers to download it; on Windows (installer)
+and Linux (AppImage) it installs itself on restart. The macOS build and the portable Windows build cannot
+replace themselves, so they open the download page instead. *Help → Check for updates…* or the link on the
+Library screen checks on demand.
 
 ## Run from source
 
@@ -84,7 +96,7 @@ lib/source.js        reads window.mapData from a game's map page with a hidden E
 lib/build-markers.js converts the page data into markers.json (tile origin from the map bounds)
 lib/tiles.js         tile pyramid downloader that skips blank quadrants; resumable
 lib/media.js         screenshot downloader
-lib/library.js       list / add / update / remove games; load a map for the renderer
+lib/library.js       list / look up / add / update / remove games; load a map for the renderer
 scripts/add-game.js  command-line front end for lib/library.js
 ```
 

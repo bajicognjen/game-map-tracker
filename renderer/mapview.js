@@ -4,7 +4,8 @@
  *
  * The CRS is a CRS.Simple variant whose scale is 2^(zoom − nativeMaxZoom), so Leaflet's zoom
  * levels line up with the tile pyramid and 1 unit = 1 pixel at the native max zoom.
- * Progress ("collected"), filters and the last view are stored per map with LocalForage.
+ * Markers live in a cluster group (switchable to a plain group); progress ("collected"),
+ * filters and the last view are stored per map with LocalForage.
  *
  * Controls: click a marker for details, right-click (or the popup button) to toggle collected.
  */
@@ -14,7 +15,7 @@ window.MapView = (() => {
     back: $('back-library'), gameTitle: $('game-title'), mapSelect: $('map-select'), mapTitle: $('map-title'),
     progressText: $('progress-text'), progressPct: $('progress-pct'), progressFill: $('progress-fill'),
     search: $('search'), hideCollected: $('hide-collected'), showAll: $('show-all'), hideAll: $('hide-all'),
-    visibleCount: $('visible-count'), categories: $('categories'),
+    cluster: $('cluster-markers'), visibleCount: $('visible-count'), categories: $('categories'), results: $('search-results'),
     exportBtn: $('export-progress'), importBtn: $('import-progress'), resetBtn: $('reset-progress'),
     tileStatus: $('tile-status'), toast: $('toast'), map: $('map'),
   };
@@ -69,7 +70,17 @@ window.MapView = (() => {
     el.showAll.addEventListener('click', () => view && view.showAll());
     el.hideAll.addEventListener('click', () => view && view.hideAll());
     el.hideCollected.addEventListener('change', () => view && view.setHideCollected(el.hideCollected.checked));
+    el.cluster.addEventListener('change', () => view && view.setClustering(el.cluster.checked));
     el.search.addEventListener('input', debounce(() => view && view.setSearch(el.search.value), 120));
+    el.search.addEventListener('keydown', (e) => {
+      if (!view) return;
+      if (e.key === 'Enter') { e.preventDefault(); view.focusFirstResult(); }
+      if (e.key === 'Escape') { el.search.value = ''; view.setSearch(''); }
+    });
+    el.results.addEventListener('click', (e) => {
+      const item = e.target.closest('[data-id]');
+      if (item && view) view.focus(Number(item.dataset.id));
+    });
     el.exportBtn.addEventListener('click', () => view && view.exportProgress());
     el.importBtn.addEventListener('click', () => view && view.importProgress());
     el.resetBtn.addEventListener('click', () => view && view.resetProgress());
@@ -96,6 +107,9 @@ window.MapView = (() => {
   function close() {
     if (view) { view.destroy(); view = null; }
     el.categories.innerHTML = '';
+    el.results.innerHTML = '';
+    el.results.classList.add('hidden');
+    el.categories.classList.remove('hidden');
   }
 
   // ---------- one map ----------
@@ -110,16 +124,18 @@ window.MapView = (() => {
     el.gameTitle.textContent = game.title;
     el.mapTitle.textContent = `${data.map.title} · ${data.markers.length} locations`;
     document.title = `${game.title} — ${data.map.title}`;
-    const readyMaps = game.maps.filter((m) => m.ready);
+    const readyMaps = game.maps.filter((m) => m.ready && m.markerCount !== 0);
     el.mapSelect.innerHTML = readyMaps.map((m) => `<option value="${esc(m.slug)}"${m.slug === mapSlug ? ' selected' : ''}>${esc(m.title)}</option>`).join('');
     el.mapSelect.classList.toggle('hidden', readyMaps.length < 2);
 
     // persistence (one small IndexedDB per map; the site's map ids are globally unique)
     const store = localforage.createInstance({ name: `game-map-tracker-map-${data.map.id}` });
+    const storedCluster = await store.getItem('cluster');
     const state = {
       collected: (await store.getItem('collected')) || {},
       hidden: new Set((await store.getItem('hiddenCategories')) || []),
       hideCollected: !!(await store.getItem('hideCollected')),
+      cluster: storedCluster === null || storedCluster === undefined ? true : !!storedCluster,
       view: await store.getItem('view'),
       search: '',
     };
@@ -127,11 +143,13 @@ window.MapView = (() => {
       collected: () => store.setItem('collected', state.collected),
       hidden: () => store.setItem('hiddenCategories', [...state.hidden]),
       hideCollected: () => store.setItem('hideCollected', state.hideCollected),
+      cluster: () => store.setItem('cluster', state.cluster),
       view: () => store.setItem('view', state.view),
     };
     const isCollected = (id) => Object.prototype.hasOwnProperty.call(state.collected, id);
     el.search.value = '';
     el.hideCollected.checked = state.hideCollected;
+    el.cluster.checked = state.cluster;
 
     const categoriesById = new Map(data.categories.map((c) => [c.id, c]));
     const groupsById = new Map(data.groups.map((g) => [g.id, g]));
@@ -244,6 +262,7 @@ window.MapView = (() => {
 
     // ---------- markers ----------
     const entries = new Map(); // id -> { data, category, marker }
+    const markerIds = new WeakMap(); // L.Marker -> id (for cluster icons)
     for (const m of data.markers) {
       const category = categoriesById.get(m.categoryId);
       if (!category) continue;
@@ -252,35 +271,80 @@ window.MapView = (() => {
       marker.bindPopup(() => popupHtml(m), { maxWidth: 380, minWidth: 260, className: 'mg-popup', autoPanPadding: [40, 40] });
       marker.on('contextmenu', (e) => { if (e.originalEvent) e.originalEvent.preventDefault(); toggleCollected(m.id); });
       marker.on('popupopen', () => marker.closeTooltip()); // Leaflet also opens the tooltip on click
+      markerIds.set(marker, m.id);
       entries.set(m.id, { data: m, category, marker });
     }
 
-    function isVisible(entry) {
-      const m = entry.data;
-      if (state.hidden.has(m.categoryId)) return false;
-      if (state.hideCollected && isCollected(m.id)) return false;
-      if (state.search) {
-        const hay = `${m.title}\n${m.description || ''}\n${entry.category.title}`.toLowerCase();
-        if (!hay.includes(state.search)) return false;
+    // Markers sit in a cluster group (or a plain group when clustering is off). Only the
+    // visible, filtered markers are in the group; clusters are rebuilt from those.
+    function makeGroup(clustered) {
+      if (clustered && L.markerClusterGroup) {
+        return L.markerClusterGroup({
+          maxClusterRadius: 36,
+          disableClusteringAtZoom: T.nativeMaxZoom,
+          spiderfyOnMaxZoom: true,
+          showCoverageOnHover: false,
+          zoomToBoundsOnClick: true,
+          chunkedLoading: true,
+          iconCreateFunction: (cluster) => {
+            const children = cluster.getAllChildMarkers();
+            let done = 0;
+            for (const c of children) if (isCollected(markerIds.get(c))) done++;
+            const n = children.length;
+            const size = n < 10 ? 30 : n < 100 ? 38 : 48;
+            return L.divIcon({
+              html: `<span>${n}</span>`,
+              className: `mg-cluster ${n < 10 ? 'sm' : n < 100 ? 'md' : 'lg'}${done === n ? ' done' : ''}`,
+              iconSize: L.point(size, size),
+            });
+          },
+        });
       }
-      return true;
+      return L.featureGroup();
+    }
+    let group = makeGroup(state.cluster).addTo(map);
+    const onMap = new Set(); // entries currently in the group
+    function groupAdd(layers) { if (!layers.length) return; if (group.addLayers) group.addLayers(layers); else for (const l of layers) group.addLayer(l); }
+    function groupRemove(layers) { if (!layers.length) return; if (group.removeLayers) group.removeLayers(layers); else for (const l of layers) group.removeLayer(l); }
+
+    function matchesSearch(entry) {
+      if (!state.search) return true;
+      const m = entry.data;
+      return `${m.title}\n${m.description || ''}\n${entry.category.title}`.toLowerCase().includes(state.search);
+    }
+    function isVisible(entry) {
+      if (state.hidden.has(entry.data.categoryId)) return false;
+      if (state.hideCollected && isCollected(entry.data.id)) return false;
+      return matchesSearch(entry);
     }
     function applyFilters() {
+      const add = [];
+      const remove = [];
       let shown = 0;
       for (const entry of entries.values()) {
         const visible = isVisible(entry);
-        const onMap = map.hasLayer(entry.marker);
-        if (visible && !onMap) entry.marker.addTo(map);
-        else if (!visible && onMap) map.removeLayer(entry.marker);
+        const has = onMap.has(entry);
+        if (visible && !has) { add.push(entry.marker); onMap.add(entry); }
+        else if (!visible && has) { remove.push(entry.marker); onMap.delete(entry); }
         if (visible) shown++;
       }
-      el.visibleCount.textContent = state.search
-        ? `${shown} match${shown === 1 ? '' : 'es'} for “${state.search}”`
-        : `${shown} of ${entries.size} markers shown`;
+      groupRemove(remove);
+      groupAdd(add);
+      el.visibleCount.textContent = `${shown} of ${entries.size} shown`;
+    }
+    function setClustering(on) {
+      state.cluster = !!on;
+      persist.cluster();
+      const layers = [...onMap].map((e) => e.marker);
+      map.closePopup();
+      map.removeLayer(group);
+      group = makeGroup(state.cluster).addTo(map);
+      groupAdd(layers);
     }
     function refreshEntry(entry) {
       entry.marker.setIcon(iconFor(entry.category, isCollected(entry.data.id)));
       if (entry.marker.isPopupOpen()) entry.marker.getPopup().setContent(popupHtml(entry.data));
+      if (group.refreshClusters && onMap.has(entry)) group.refreshClusters(entry.marker);
     }
     function toggleCollected(id) {
       const entry = entries.get(id);
@@ -291,6 +355,7 @@ window.MapView = (() => {
       refreshEntry(entry);
       renderProgress();
       if (state.hideCollected) applyFilters();
+      if (state.search) renderResults();
     }
     function focusMarker(id) {
       const entry = entries.get(id);
@@ -298,14 +363,50 @@ window.MapView = (() => {
       let changed = false;
       if (state.hidden.has(entry.data.categoryId)) { state.hidden.delete(entry.data.categoryId); persist.hidden(); changed = true; }
       if (state.hideCollected && isCollected(id)) { state.hideCollected = false; el.hideCollected.checked = false; persist.hideCollected(); changed = true; }
-      if (state.search) { state.search = ''; el.search.value = ''; changed = true; }
       if (changed) { syncCategoryUI(); applyFilters(); }
       map.closePopup();
       let opened = false;
-      const openIt = () => { if (!opened) { opened = true; entry.marker.openPopup(); } };
+      // The cluster plugin animates for a moment after a zoom; asking it to reveal a marker during
+      // that window never calls back, so wait for its 'animationend' first.
+      const whenSettled = (fn) => { if (group._inZoomAnimation) group.once('animationend', fn); else fn(); };
+      const openIt = () => {
+        if (opened) return;
+        opened = true;
+        whenSettled(() => {
+          if (entry.marker._icon || !group.zoomToShowLayer || !onMap.has(entry)) entry.marker.openPopup();
+          else group.zoomToShowLayer(entry.marker, () => entry.marker.openPopup());
+        });
+      };
       map.once('moveend', openIt);
       setTimeout(openIt, 700);
       map.setView([entry.data.y, entry.data.x], Math.max(map.getZoom(), T.nativeMaxZoom - 1), { animate: true });
+    }
+
+    // ---------- search results ----------
+    let firstResultId = null;
+    const RESULT_LIMIT = 300;
+    function renderResults() {
+      if (!state.search) {
+        el.results.innerHTML = '';
+        el.results.classList.add('hidden');
+        el.categories.classList.remove('hidden');
+        firstResultId = null;
+        return;
+      }
+      const matches = [...entries.values()].filter(matchesSearch).sort((a, b) => a.data.title.localeCompare(b.data.title));
+      firstResultId = matches.length ? matches[0].data.id : null;
+      const items = matches.slice(0, RESULT_LIMIT).map((e) => {
+        const r = regionsById.get(e.data.regionId);
+        const done = isCollected(e.data.id);
+        return `<li class="result${done ? ' done' : ''}" data-id="${e.data.id}">
+          <span class="cat-icon" style="${spriteStyle(frameFor(e.category), 0.5)}"></span>
+          <span class="result-text"><span class="result-title">${esc(e.data.title)}</span><span class="result-meta">${esc(e.category.title)}${r ? ` · ${esc(r.title)}` : ''}</span></span>
+          ${done ? '<span class="result-check">✓</span>' : ''}
+        </li>`;
+      }).join('');
+      el.results.innerHTML = `<div class="results-head">${matches.length} match${matches.length === 1 ? '' : 'es'}${matches.length > RESULT_LIMIT ? ` · showing the first ${RESULT_LIMIT}` : ''} · Enter jumps to the first</div><ul>${items}</ul>`;
+      el.results.classList.remove('hidden');
+      el.categories.classList.add('hidden');
     }
 
     // ---------- popup ----------
@@ -337,20 +438,22 @@ window.MapView = (() => {
     map.on('popupclose', (e) => { delete e.popup._relaidOut; openPopup = null; });
 
     // ---------- sidebar ----------
+    function categoryItem(c) {
+      return `
+        <li class="cat${state.hidden.has(c.id) ? ' off' : ''}" data-cat="${c.id}">
+          <label class="chk">
+            <input type="checkbox" class="cat-toggle" data-cat="${c.id}" ${state.hidden.has(c.id) ? '' : 'checked'}>
+            <span class="cat-icon" style="${spriteStyle(frameFor(c), 0.5)}"></span>
+            <span class="cat-title" title="${esc(c.info || c.title)}">${esc(c.title)}</span>
+          </label>
+          <span class="count" data-cat-count="${c.id}"></span>
+        </li>`;
+    }
     function renderCategories() {
       const sections = [];
       for (const g of data.groups) {
         const cats = data.categories.filter((c) => c.groupId === g.id);
         if (!cats.length) continue;
-        const items = cats.map((c) => `
-          <li class="cat${state.hidden.has(c.id) ? ' off' : ''}" data-cat="${c.id}">
-            <label class="chk">
-              <input type="checkbox" class="cat-toggle" data-cat="${c.id}" ${state.hidden.has(c.id) ? '' : 'checked'}>
-              <span class="cat-icon" style="${spriteStyle(frameFor(c), 0.5)}"></span>
-              <span class="cat-title" title="${esc(c.info || c.title)}">${esc(c.title)}</span>
-            </label>
-            <span class="count" data-cat-count="${c.id}"></span>
-          </li>`).join('');
         sections.push(`
           <section class="group" data-group="${g.id}">
             <header class="group-head">
@@ -360,14 +463,12 @@ window.MapView = (() => {
               </label>
               <span class="count" data-group-count="${g.id}"></span>
             </header>
-            <ul class="cats">${items}</ul>
+            <ul class="cats">${cats.map(categoryItem).join('')}</ul>
           </section>`);
       }
-      // categories without a known group
       const orphans = data.categories.filter((c) => !groupsById.has(c.groupId));
       if (orphans.length) {
-        sections.push(`<section class="group"><header class="group-head"><span class="group-title">Other</span></header><ul class="cats">${orphans.map((c) => `
-          <li class="cat${state.hidden.has(c.id) ? ' off' : ''}" data-cat="${c.id}"><label class="chk"><input type="checkbox" class="cat-toggle" data-cat="${c.id}" ${state.hidden.has(c.id) ? '' : 'checked'}><span class="cat-icon" style="${spriteStyle(frameFor(c), 0.5)}"></span><span class="cat-title">${esc(c.title)}</span></label><span class="count" data-cat-count="${c.id}"></span></li>`).join('')}</ul></section>`);
+        sections.push(`<section class="group"><header class="group-head"><span class="group-title">Other</span></header><ul class="cats">${orphans.map(categoryItem).join('')}</ul></section>`);
       }
       el.categories.innerHTML = sections.join('');
       syncCategoryUI();
@@ -425,6 +526,8 @@ window.MapView = (() => {
     return {
       source, gameSlug, mapSlug,
       destroy() { map.remove(); openPopup = null; },
+      focus: focusMarker,
+      focusFirstResult() { if (firstResultId !== null) focusMarker(firstResultId); },
       onCategoryChange(e) {
         const t = e.target;
         if (t.classList.contains('cat-toggle')) {
@@ -442,7 +545,8 @@ window.MapView = (() => {
       showAll() { state.hidden.clear(); persist.hidden(); syncCategoryUI(); applyFilters(); },
       hideAll() { for (const c of data.categories) state.hidden.add(c.id); persist.hidden(); syncCategoryUI(); applyFilters(); },
       setHideCollected(value) { state.hideCollected = !!value; persist.hideCollected(); applyFilters(); },
-      setSearch(value) { state.search = String(value).trim().toLowerCase(); applyFilters(); },
+      setClustering,
+      setSearch(value) { state.search = String(value).trim().toLowerCase(); applyFilters(); renderResults(); },
       onMapClick(e) {
         const t = e.target.closest('[data-toggle],[data-goto],[data-ext],.pp-media.spoiler');
         if (!t) return;
@@ -471,10 +575,10 @@ window.MapView = (() => {
         try {
           const parsed = JSON.parse(text);
           if (parsed && parsed.mapId && parsed.mapId !== data.map.id) throw new Error(`That file is for a different map (${parsed.game || '?'} / ${parsed.map || '?'})`);
-          const source = parsed && typeof parsed.collected === 'object' ? parsed.collected : parsed;
-          if (!source || typeof source !== 'object') throw new Error('That file is not a progress export');
+          const src = parsed && typeof parsed.collected === 'object' ? parsed.collected : parsed;
+          if (!src || typeof src !== 'object') throw new Error('That file is not a progress export');
           let imported = 0;
-          for (const [key, value] of Object.entries(source)) {
+          for (const [key, value] of Object.entries(src)) {
             const id = Number(key);
             if (!entries.has(id)) continue;
             state.collected[id] = typeof value === 'string' ? value : new Date().toISOString();
@@ -484,6 +588,7 @@ window.MapView = (() => {
           for (const entry of entries.values()) refreshEntry(entry);
           renderProgress();
           applyFilters();
+          if (state.search) renderResults();
           toast(`Imported ${imported} collected marker${imported === 1 ? '' : 's'}`);
         } catch (err) {
           toast(err.message || 'That file is not a progress export');
@@ -496,6 +601,7 @@ window.MapView = (() => {
         for (const entry of entries.values()) refreshEntry(entry);
         renderProgress();
         applyFilters();
+        if (state.search) renderResults();
         toast('Progress reset');
       },
     };

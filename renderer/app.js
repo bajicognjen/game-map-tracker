@@ -1,9 +1,11 @@
 'use strict';
-/** Screen switching: library <-> map view, remembering the last opened map. */
+/** Screen switching (library <-> map view), the last opened map, and the update banner. */
 (async function main() {
   const LAST_KEY = 'game-map-tracker:last-map';
-  const screens = { library: document.getElementById('library'), map: document.getElementById('mapscreen') };
+  const $ = (id) => document.getElementById(id);
+  const screens = { library: $('library'), map: $('mapscreen') };
   const show = (name) => { for (const [key, node] of Object.entries(screens)) node.classList.toggle('hidden', key !== name); };
+  const toast = (m) => window.MapView.toast(m);
 
   async function openMap(source, gameSlug, mapSlug) {
     show('map');
@@ -12,7 +14,7 @@
     } catch (err) {
       window.MapView.close();
       show('library');
-      window.Library.toast(String((err && err.message) || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''));
+      toast(String((err && err.message) || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''));
     }
   }
 
@@ -29,6 +31,31 @@
     onOpened: (source, gameSlug, mapSlug) => { try { localStorage.setItem(LAST_KEY, JSON.stringify({ source, game: gameSlug, map: mapSlug })); } catch { /* ignore */ } },
   });
   window.api.onMenu((action) => { if (action === 'library') showLibrary(); });
+
+  // ---------- update banner ----------
+  const banner = { box: $('update-banner'), text: $('update-text'), action: $('update-action'), dismiss: $('update-dismiss') };
+  function showBanner(text, actionLabel, onAction) {
+    banner.text.textContent = text;
+    banner.action.textContent = actionLabel || '';
+    banner.action.classList.toggle('hidden', !actionLabel);
+    banner.action.onclick = onAction || null;
+    banner.box.classList.remove('hidden');
+  }
+  banner.dismiss.addEventListener('click', () => banner.box.classList.add('hidden'));
+  window.api.onUpdateStatus((s) => {
+    switch (s.status) {
+      case 'available':
+        if (s.mode === 'auto') showBanner(`Version ${s.version} is available`, 'Download', () => { window.api.downloadUpdate(); showBanner(`Downloading version ${s.version}…`); });
+        else showBanner(`Version ${s.version} is available`, 'Open download page', () => window.api.openExternal(s.releasesUrl));
+        break;
+      case 'downloading': showBanner(`Downloading update… ${s.percent}%`); break;
+      case 'downloaded': showBanner(`Version ${s.version} is ready to install`, 'Restart now', () => window.api.installUpdate()); break;
+      case 'none': if (s.manual) toast(`You have the latest version (${s.current})`); break;
+      case 'disabled': if (s.manual) toast('Update checks only work in the installed app'); break;
+      case 'error': if (s.manual) toast(`Update check failed: ${s.message}`); break;
+      default: break;
+    }
+  });
 
   const games = await window.Library.refresh();
   let last = null;
