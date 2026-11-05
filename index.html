@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: gamemap: https:; connect-src 'self'">
+  <title>Game Map Tracker</title>
+  <link rel="stylesheet" href="node_modules/leaflet/dist/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- ===== Library: pick, add or remove games ===== -->
+  <section id="library" class="screen">
+    <div class="lib-inner">
+      <header class="lib-header">
+        <h1>Game Map Tracker</h1>
+        <p class="muted">Offline interactive maps with collectible tracking. Paste the link to a game's interactive map page to add it, then open its maps.</p>
+      </header>
+
+      <section class="card lib-add">
+        <h2>Add a game</h2>
+        <form id="add-form" autocomplete="off">
+          <input id="add-url" type="text" placeholder="https://<site>/<game>   — link to the game's map page" spellcheck="false" required>
+          <div class="row wrap">
+            <label class="chk"><input type="checkbox" id="add-tiles" checked> Download map tiles for offline use</label>
+            <label class="chk"><input type="checkbox" id="add-media" checked> Download location screenshots</label>
+          </div>
+          <div class="row">
+            <button type="submit" id="add-btn" class="primary">Add game</button>
+            <button type="button" id="cancel-btn" class="hidden">Cancel</button>
+            <span id="add-status" class="muted small"></span>
+          </div>
+        </form>
+        <div id="add-progress" class="hidden">
+          <div class="progress-bar"><div id="add-fill"></div></div>
+          <ul id="add-log"></ul>
+        </div>
+      </section>
+
+      <section class="lib-games">
+        <h2>Your games</h2>
+        <p id="lib-empty" class="muted hidden">No games yet. Paste a game's map link above to add one.</p>
+        <div id="game-list" class="cards"></div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ===== Map view ===== -->
+  <section id="mapscreen" class="screen hidden">
+    <aside id="sidebar">
+      <header class="sidebar-header">
+        <div class="row between">
+          <button type="button" id="back-library" class="link">← Library</button>
+          <select id="map-select" class="hidden" title="Switch map"></select>
+        </div>
+        <h1 id="game-title"></h1>
+        <div id="map-title" class="muted small"></div>
+      </header>
+
+      <section class="progress">
+        <div class="progress-row">
+          <span id="progress-text">0 / 0 found</span>
+          <span id="progress-pct">0%</span>
+        </div>
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+      </section>
+
+      <section class="controls">
+        <input id="search" type="search" placeholder="Search locations…" autocomplete="off" spellcheck="false">
+        <div class="toggle-row">
+          <label class="chk"><input type="checkbox" id="hide-collected"> Hide collected</label>
+          <span class="spacer"></span>
+          <button type="button" id="show-all" class="link">Show all</button>
+          <button type="button" id="hide-all" class="link">Hide all</button>
+        </div>
+        <div id="visible-count" class="muted small"></div>
+      </section>
+
+      <nav id="categories" aria-label="Category filters"></nav>
+
+      <footer class="sidebar-footer">
+        <button type="button" id="export-progress">Export progress</button>
+        <button type="button" id="import-progress">Import</button>
+        <button type="button" id="reset-progress" class="danger">Reset</button>
+        <div id="tile-status" class="muted small"></div>
+      </footer>
+    </aside>
+    <main id="map" role="application" aria-label="Map"></main>
+  </section>
+
+  <div id="toast" role="status"></div>
+
+  <script src="node_modules/leaflet/dist/leaflet.js"></script>
+  <script src="node_modules/localforage/dist/localforage.min.js"></script>
+  <script src="renderer/mapview.js"></script>
+  <script src="renderer/library.js"></script>
+  <script src="renderer/app.js"></script>
+</body>
+</html>

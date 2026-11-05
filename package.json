@@ -1,0 +1,84 @@
+{
+  "name": "game-map-tracker",
+  "version": "2.0.1",
+  "description": "Offline interactive game maps with collectible tracking. Add a game from its map page, track your progress, no account or limits.",
+  "author": "Ognjen Bajic",
+  "license": "MIT",
+  "repository": "github:bajicognjen/game-map-tracker",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "add-game": "electron scripts/add-game.js",
+    "build": "electron-builder --publish never",
+    "build:linux": "electron-builder --linux AppImage --publish never",
+    "build:win": "electron-builder --win --publish never",
+    "build:mac": "electron-builder --mac --publish never"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "localforage": "^1.10.0"
+  },
+  "devDependencies": {
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "local.game-map-tracker",
+    "productName": "Game Map Tracker",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "styles.css",
+      "renderer/**",
+      "lib/**",
+      "node_modules/leaflet/dist/**",
+      "node_modules/localforage/dist/**"
+    ],
+    "artifactName": "GameMapTracker-${version}-${os}-${arch}.${ext}",
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Game"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "GameMapTracker-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "GameMapTracker-Portable-${version}.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.games"
+    },
+    "publish": {
+      "provider": "github",
+      "releaseType": "draft"
+    }
+  }
+}
