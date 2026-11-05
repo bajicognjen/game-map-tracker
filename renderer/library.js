@@ -13,7 +13,12 @@ window.Library = (() => {
     gamesDir: $('games-dir'), backupsDir: $('backups-dir'), settingsMove: $('settings-move'), settingsStatus: $('settings-status'),
     reportProblem: $('report-problem'),
   };
-  const MB = (b) => (b >= 1048576 * 1000 ? `${(b / 1073741824).toFixed(1)} GB` : `${Math.round(b / 1048576)} MB`);
+  const MB = (b) => {
+    if (!b) return '0 MB';
+    if (b >= 1048576 * 1000) return `${(b / 1073741824).toFixed(1)} GB`;
+    if (b >= 1048576) return `${Math.round(b / 1048576)} MB`;
+    return `${Math.max(1, Math.round(b / 1024))} KB`;
+  };
   let onOpen = () => {};
   let games = [];
   let busy = false;
@@ -44,32 +49,41 @@ window.Library = (() => {
       const maps = g.maps.filter((m) => m.markerCount !== 0).map((m) => {
         const native = m.tiles.nativeMaxZoom || m.nativeMaxZoom || null;
         const partial = m.tiles.available && native && m.tiles.maxZoom < native;
-        const tilesText = m.tiles.available
-          ? `offline tiles to zoom ${m.tiles.maxZoom}${native ? ` of ${native}` : ''}${m.tiles.bytes ? ` (${(m.tiles.bytes / 1048576).toFixed(0)} MB)` : ''}`
-          : 'online tiles';
+        const tilesText = m.tiles.available ? `offline tiles to zoom ${m.tiles.maxZoom}${native ? ` of ${native}` : ''}` : 'online tiles';
         return `
         <li>
           <div>
             <div class="name">${esc(m.title)}</div>
             <div class="meta">${m.markerCount || 0} locations · ${tilesText} · ${m.mediaCount} screenshots${partial ? ` · <button type="button" class="link detail" data-detail="${esc(m.slug)}" title="Download the finer zoom levels">add detail</button>` : ''}</div>
           </div>
-          <button type="button" class="btn" data-open="${esc(m.slug)}" ${m.ready ? '' : 'disabled'}>Open</button>
+          <button type="button" class="btn small-btn" data-open="${esc(m.slug)}" ${m.ready ? '' : 'disabled'}>Open</button>
         </li>`;
       }).join('');
+      const tiles = g.sizes ? g.sizes.tiles : 0;
+      const media = g.sizes ? g.sizes.media : 0;
+      const cover = g.cover ? `gamemap://${esc(g.source)}/${esc(g.slug)}/${esc(g.cover)}` : '';
       cards.push(`
         <article class="card game-card" data-game="${esc(g.slug)}" data-source="${esc(g.source)}">
-          ${g.cover ? `<img class="cover" src="gamemap://${esc(g.source)}/${esc(g.slug)}/${esc(g.cover)}" alt="">` : ''}
-          <div class="row between">
-            <h3 class="title">${esc(g.title)}</h3>
+          <div class="hero"${cover ? ` style="background-image:url('${cover}')"` : ''}>
             ${g.source === 'bundled' ? '<span class="badge">bundled</span>' : ''}
+            <h3 class="title">${esc(g.title)}</h3>
+            <details class="menu">
+              <summary title="More actions" aria-label="More actions">···</summary>
+              <div class="menu-items">
+                <button type="button" data-update="1" title="Re-read the map data from its site and fetch anything missing">Update from the site</button>
+                <button type="button" data-clean="tiles" ${tiles ? '' : 'disabled'} title="Delete the offline tiles; the map then streams them from the site">Delete offline tiles <span class="size">${MB(tiles)}</span></button>
+                <button type="button" data-clean="media" ${media ? '' : 'disabled'} title="Delete the downloaded screenshots; popups then load them from the site">Delete screenshots <span class="size">${MB(media)}</span></button>
+                ${g.source === 'user' ? '<hr><button type="button" class="danger" data-remove="1">Remove game</button>' : ''}
+              </div>
+            </details>
           </div>
-          <div class="muted small">${g.maps.length} map${g.maps.length === 1 ? '' : 's'} · ${p.found} / ${p.total} found (${p.pct}%)</div>
-          <div class="progress-bar"><div style="width:${p.pct}%"></div></div>
-          <div class="storage">On disk: tiles ${MB(g.sizes ? g.sizes.tiles : 0)}${g.sizes && g.sizes.tiles ? ` <button type="button" class="link" data-clean="tiles" title="Delete the offline tiles (the map then streams them from the site)">delete</button>` : ''} · screenshots ${MB(g.sizes ? g.sizes.media : 0)}${g.sizes && g.sizes.media ? ` <button type="button" class="link" data-clean="media" title="Delete the downloaded screenshots (popups then load them from the site)">delete</button>` : ''}</div>
-          <ul class="maps">${maps}</ul>
-          <div class="actions">
-            <button type="button" class="btn" data-update="1" title="Re-read the map data from its site and fetch anything missing">Update</button>
-            ${g.source === 'user' ? '<button type="button" class="btn danger" data-remove="1">Remove</button>' : ''}
+          <div class="card-body">
+            <div>
+              <div class="progress-line"><span>${p.found} / ${p.total} found</span><span class="pct">${p.pct}%</span></div>
+              <div class="progress-bar"><div style="width:${p.pct}%"></div></div>
+            </div>
+            <ul class="maps">${maps}</ul>
+            <div class="storage">${g.maps.length} map${g.maps.length === 1 ? '' : 's'} · tiles ${MB(tiles)} · screenshots ${MB(media)}</div>
           </div>
         </article>`);
     }
@@ -273,10 +287,14 @@ window.Library = (() => {
     el.planBack.addEventListener('click', () => { lookup = null; setPhase(); });
     el.cancelBtn.addEventListener('click', () => { el.cancelBtn.disabled = true; window.api.cancelJob().catch(() => {}); });
     el.stopBtn.addEventListener('click', () => { el.stopBtn.disabled = true; el.stopBtn.textContent = 'Stopping after this zoom…'; window.api.stopTiles().catch(() => {}); });
+    const closeMenus = (except) => { for (const d of el.list.querySelectorAll('details.menu[open]')) if (d !== except) d.open = false; };
+    document.addEventListener('click', (e) => { if (!e.target.closest('details.menu')) closeMenus(); });
     el.list.addEventListener('click', async (e) => {
       const btn = e.target.closest('button');
       const card = e.target.closest('.game-card');
+      if (e.target.closest('summary')) { closeMenus(e.target.closest('details.menu')); return; }
       if (!btn || !card) return;
+      closeMenus();
       const slug = card.dataset.game;
       const source = card.dataset.source;
       const g = games.find((x) => x.slug === slug);

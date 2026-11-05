@@ -1,6 +1,6 @@
 {
   "name": "game-map-tracker",
-  "version": "2.4.1",
+  "version": "2.5.0",
   "description": "Offline interactive game maps with collectible tracking. Add a game from its map page, track your progress, no account or limits.",
   "author": "Ognjen Bajic",
   "license": "MIT",
@@ -45,7 +45,8 @@
       "styles.css",
       "renderer/**",
       "lib/**",
-      "package.json"
+      "package.json",
+      "build/icon.png"
     ],
     "artifactName": "GameMapTracker-${version}-${os}-${arch}.${ext}",
     "linux": {

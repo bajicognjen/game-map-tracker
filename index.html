@@ -12,35 +12,50 @@
 <body>
   <!-- ===== Library: pick, add or remove games ===== -->
   <section id="library" class="screen">
-    <div class="lib-inner">
-      <header class="lib-header">
-        <h1>Game Map Tracker</h1>
-        <p class="muted">Offline interactive maps with collectible tracking. Paste the link to a game's interactive map page to add it, then open its maps.</p>
-        <p class="muted small"><span id="app-version"></span> · <button type="button" id="check-updates" class="link">Check for updates</button> · <button type="button" id="open-settings" class="link">Settings</button> · <button type="button" id="report-problem" class="link">Report a problem</button></p>
-      </header>
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand-icon" src="build/icon.png" alt="">
+        <div>
+          <h1>Game Map Tracker</h1>
+          <div class="brand-sub">Offline interactive maps with collectible tracking</div>
+        </div>
+      </div>
+      <nav class="topbar-actions">
+        <button type="button" id="check-updates" class="btn ghost">Check for updates</button>
+        <button type="button" id="open-settings" class="btn ghost">Settings</button>
+        <button type="button" id="report-problem" class="btn ghost">Report a problem</button>
+        <span id="app-version" class="version"></span>
+      </nav>
+    </header>
 
+    <div class="lib-inner">
       <section class="card hidden" id="settings-panel">
-        <div class="row between"><h2>Settings</h2><button type="button" id="close-settings" class="link">Close</button></div>
+        <div class="card-head"><h2>Settings</h2><button type="button" id="close-settings" class="btn ghost">Close</button></div>
         <div class="setting">
-          <div class="setting-label">Game data folder <span class="muted small">(maps, tiles, screenshots — this is where the space goes)</span></div>
-          <div class="row wrap"><code id="games-dir" class="path"></code><button type="button" class="btn" data-choose="games">Change…</button><button type="button" class="btn hidden" data-default="games">Use default</button></div>
+          <div class="setting-label">Game data folder</div>
+          <div class="setting-help">Maps, tiles and screenshots. This is where the disk space goes.</div>
+          <div class="row wrap"><code id="games-dir" class="path"></code><button type="button" class="btn" data-choose="games">Change…</button><button type="button" class="btn ghost hidden" data-default="games">Use default</button></div>
         </div>
         <div class="setting">
-          <div class="setting-label">Progress backups folder <span class="muted small">(point it at a synced folder to carry progress between computers)</span></div>
-          <div class="row wrap"><code id="backups-dir" class="path"></code><button type="button" class="btn" data-choose="backups">Change…</button><button type="button" class="btn hidden" data-default="backups">Use default</button></div>
+          <div class="setting-label">Progress backups folder</div>
+          <div class="setting-help">Point it at a synced folder to carry your progress to another computer.</div>
+          <div class="row wrap"><code id="backups-dir" class="path"></code><button type="button" class="btn" data-choose="backups">Change…</button><button type="button" class="btn ghost hidden" data-default="backups">Use default</button></div>
         </div>
-        <label class="chk small"><input type="checkbox" id="settings-move" checked> Move the existing contents when a folder changes</label>
+        <label class="chk"><input type="checkbox" id="settings-move" checked> Move the existing contents when a folder changes</label>
         <div id="settings-status" class="muted small"></div>
       </section>
 
       <section class="card lib-add">
-        <h2>Add a game</h2>
+        <div class="card-head">
+          <h2>Add a game</h2>
+          <span class="muted">Paste the link to a game's interactive map page</span>
+        </div>
         <form id="add-form" autocomplete="off">
           <div class="row">
-            <input id="add-url" type="text" placeholder="https://<site>/<game>   — link to the game's map page" spellcheck="false" required>
-            <button type="submit" id="add-submit" class="primary">Look up</button>
-            <button type="button" id="stop-tiles-btn" class="hidden" title="Keep the tiles downloaded so far and skip the finer zoom levels">Stop tiles at this zoom</button>
-            <button type="button" id="cancel-btn" class="hidden">Cancel</button>
+            <input id="add-url" type="text" placeholder="https://…/<game>" spellcheck="false" required>
+            <button type="submit" id="add-submit" class="btn primary">Look up</button>
+            <button type="button" id="stop-tiles-btn" class="btn hidden" title="Keep the tiles downloaded so far and skip the finer zoom levels">Stop tiles at this zoom</button>
+            <button type="button" id="cancel-btn" class="btn ghost hidden">Cancel</button>
           </div>
           <div id="add-plan" class="hidden">
             <div class="row between">
@@ -48,8 +63,8 @@
               <button type="button" id="plan-back" class="link">Change link</button>
             </div>
             <div id="plan-maps" class="plan-maps"></div>
-            <div class="row wrap">
-              <label class="chk"><input type="checkbox" id="add-tiles" checked> Map tiles for offline use,</label>
+            <div class="row wrap plan-options">
+              <label class="chk"><input type="checkbox" id="add-tiles" checked> Map tiles for offline use</label>
               <select id="add-zoom" title="How much tile detail to download">
                 <option value="0">full detail</option>
                 <option value="1">one zoom level less (about ¼ the size)</option>
@@ -67,14 +82,14 @@
       </section>
 
       <section class="lib-games">
-        <div class="row between lib-games-head">
+        <div class="section-head">
           <h2>Your games</h2>
           <div class="row">
-            <button type="button" id="export-all" class="btn" title="Collected markers, notes and your own markers for every game, in one file">Export all progress</button>
-            <button type="button" id="import-all" class="btn">Import</button>
+            <button type="button" id="export-all" class="btn ghost" title="Collected markers, notes and your own markers for every game, in one file">Export all progress</button>
+            <button type="button" id="import-all" class="btn ghost">Import</button>
           </div>
         </div>
-        <p id="lib-empty" class="muted hidden">No games yet. Paste a game's map link above to add one.</p>
+        <p id="lib-empty" class="empty hidden">No games yet. Paste a game's map link above to add one.</p>
         <div id="game-list" class="cards"></div>
       </section>
     </div>
@@ -85,7 +100,7 @@
     <aside id="sidebar">
       <header class="sidebar-header">
         <div class="row between">
-          <button type="button" id="back-library" class="link">← Library</button>
+          <button type="button" id="back-library" class="link back">← Library</button>
           <select id="map-select" class="hidden" title="Switch map"></select>
         </div>
         <h1 id="game-title"></h1>
@@ -95,40 +110,40 @@
       <section class="progress">
         <div class="progress-row">
           <span id="progress-text">0 / 0 found</span>
-          <span id="progress-pct">0%</span>
+          <span id="progress-pct" class="muted">0%</span>
         </div>
         <div class="progress-bar"><div id="progress-fill"></div></div>
         <div id="progress-note" class="muted small hidden"></div>
       </section>
 
       <section class="controls">
-        <input id="search" type="search" placeholder="Search locations…" autocomplete="off" spellcheck="false">
-        <div class="toggle-row">
-          <label class="chk"><input type="checkbox" id="hide-collected"> Hide collected</label>
-          <span class="spacer"></span>
-          <button type="button" id="show-all" class="link">Show all</button>
-          <button type="button" id="hide-all" class="link">Hide all</button>
+        <div class="search-wrap">
+          <input id="search" type="search" placeholder="Search locations  ( / )" autocomplete="off" spellcheck="false">
         </div>
-        <div class="toggle-row">
-          <label class="chk"><input type="checkbox" id="cluster-markers" checked> Cluster nearby markers</label>
-          <span class="spacer"></span>
-          <label class="chk" id="region-outlines-label"><input type="checkbox" id="region-outlines" checked> Regions</label>
+        <div class="chips">
+          <label class="chip"><input type="checkbox" id="hide-collected"><span>Hide collected</span></label>
+          <label class="chip"><input type="checkbox" id="cluster-markers" checked><span>Cluster</span></label>
+          <label class="chip" id="region-outlines-label"><input type="checkbox" id="region-outlines" checked><span>Regions</span></label>
         </div>
-        <div class="toggle-row">
+        <div class="row">
           <select id="region-filter" title="Show one region only"><option value="">All regions</option></select>
           <span class="spacer"></span>
           <button type="button" id="next-uncollected" class="btn small-btn" title="Jump to the nearest uncollected marker (N)">Next uncollected ▸</button>
         </div>
-        <div id="visible-count" class="muted small"></div>
+        <div class="row between small muted list-tools">
+          <span id="visible-count"></span>
+          <span><button type="button" id="show-all" class="link">Show all</button> · <button type="button" id="hide-all" class="link">Hide all</button></span>
+        </div>
       </section>
 
       <div id="search-results" class="hidden"></div>
       <nav id="categories" aria-label="Category filters"></nav>
 
       <footer class="sidebar-footer">
-        <button type="button" id="export-progress">Export progress</button>
-        <button type="button" id="import-progress">Import</button>
-        <button type="button" id="reset-progress" class="danger">Reset</button>
+        <button type="button" id="export-progress" class="btn ghost">Export progress</button>
+        <button type="button" id="import-progress" class="btn ghost">Import</button>
+        <span class="spacer"></span>
+        <button type="button" id="reset-progress" class="link danger">Reset</button>
         <div id="tile-status" class="muted small"></div>
       </footer>
     </aside>

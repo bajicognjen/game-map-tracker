@@ -187,7 +187,7 @@ try {
   // storage: deleting the offline tiles keeps the data and switches the map to online tiles
   await page.evaluate(() => document.getElementById('back-library').click());
   await page.waitForTimeout(600);
-  check('library shows the tile size', await page.evaluate((slug) => /tiles \d+ MB/.test(document.querySelector(`.game-card[data-game="${slug}"] .storage`).textContent), FIXTURE.gameSlug));
+  check('library shows the tile size', await page.evaluate((slug) => /tiles \d+ (KB|MB|GB)/.test(document.querySelector(`.game-card[data-game="${slug}"] .storage`).textContent), FIXTURE.gameSlug));
   await page.evaluate((slug) => document.querySelector(`.game-card[data-game="${slug}"] [data-clean="tiles"]`).click(), FIXTURE.gameSlug);
   await page.waitForTimeout(800);
   check('tiles folder removed', !fs.existsSync(path.join(userData, 'games', FIXTURE.gameSlug, 'maps', FIXTURE.mapSlug, 'tiles')));
