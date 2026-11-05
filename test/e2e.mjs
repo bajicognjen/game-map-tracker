@@ -170,8 +170,13 @@ try {
   await page.evaluate(() => document.querySelector('.mg-home').click());
   await page.waitForTimeout(500);
 
-  // the window size is remembered across runs
-  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setBounds({ width: 1180, height: 760 }));
+  // the window size is remembered across runs (kept within the display's work area, so ask for a size that fits CI runners)
+  const wanted = await app.evaluate(({ BrowserWindow, screen }) => {
+    const area = screen.getPrimaryDisplay().workAreaSize;
+    const size = { width: Math.min(1000, area.width), height: Math.min(640, area.height) };
+    BrowserWindow.getAllWindows()[0].setBounds(size);
+    return size;
+  });
   await page.waitForTimeout(900);
   check('regions toggle hides the outline', await page.evaluate(async () => { document.getElementById('region-outlines').click(); await new Promise((r) => setTimeout(r, 300)); return document.querySelectorAll('.region-label').length === 0; }));
   check('no console errors in the first run', issues.length === 0, issues.slice(0, 3).join(' | '));
@@ -189,7 +194,7 @@ try {
   page = await app.firstWindow();
   attach(page, issues);
   const bounds = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getBounds());
-  check('window size remembered', Math.abs(bounds.width - 1180) <= 16 && Math.abs(bounds.height - 760) <= 40, `${bounds.width}x${bounds.height}`);
+  check('window size remembered', Math.abs(bounds.width - wanted.width) <= 16 && Math.abs(bounds.height - wanted.height) <= 40, `${bounds.width}x${bounds.height}, wanted ${wanted.width}x${wanted.height}`);
   await openFixtureMap(page);
   c = await counts(page);
   check('collected progress persists', c.progress === '1 / 5 found', c.progress);
