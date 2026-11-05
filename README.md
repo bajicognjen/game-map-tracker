@@ -89,9 +89,9 @@ npm install
 npm start
 ```
 
-Requires Node 22+ (Electron 45 needs it). If `npm start` complains that
-`node_modules/electron/dist/electron` is missing, the Electron binary download was skipped during install;
-fetch it with `node node_modules/electron/install.js`.
+Requires Node 22+ (Electron 45 needs it). `npm install` also fetches the Electron binary (a postinstall step,
+since Electron's package no longer does it itself); if `npm start` ever complains that
+`node_modules/electron/dist/electron` is missing, run `node node_modules/electron/install.js`.
 
 ## Tests
 

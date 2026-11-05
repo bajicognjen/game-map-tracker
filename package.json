@@ -8,6 +8,7 @@
   "main": "main.js",
   "private": true,
   "scripts": {
+    "postinstall": "node scripts/postinstall.js",
     "start": "electron .",
     "add-game": "electron scripts/add-game.js",
     "build": "electron-builder --publish never",
