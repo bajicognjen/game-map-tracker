@@ -250,6 +250,8 @@ window.MapView = (() => {
       zoom: (scale) => Math.log(scale) / Math.LN2 + NATIVE_ZOOM,
     });
     const mapBounds = L.latLngBounds([[0, 0], [data.map.height, data.map.width]]);
+    const panBounds = mapBounds.pad(0.05);
+    let alive = true; // false once the view is destroyed: late timers and animation callbacks then do nothing
     const map = L.map(el.map, {
       crs: CRS,
       minZoom: T.minZoom,
@@ -257,7 +259,7 @@ window.MapView = (() => {
       zoomSnap: 0.25,
       zoomDelta: 0.5,
       wheelPxPerZoomLevel: 90,
-      maxBounds: mapBounds.pad(0.05),
+      maxBounds: panBounds,
       maxBoundsViscosity: 0.9,
       attributionControl: false,
       zoomControl: false,
@@ -297,6 +299,7 @@ window.MapView = (() => {
     if (state.view && Number.isFinite(state.view.zoom)) map.setView([state.view.y, state.view.x], state.view.zoom);
     else goHome();
     map.on('moveend', debounce(() => {
+      if (!alive) return;
       const c = map.getCenter();
       state.view = { x: c.lng, y: c.lat, zoom: map.getZoom() };
       persist.view();
@@ -306,7 +309,7 @@ window.MapView = (() => {
       onAdd() {
         const bar = L.DomUtil.create('div', 'leaflet-bar');
         const a = L.DomUtil.create('a', 'mg-home', bar);
-        a.href = '#'; a.title = 'Reset view'; a.setAttribute('role', 'button'); a.textContent = '⌂';
+        a.href = '#'; a.title = 'Reset view'; a.setAttribute('role', 'button'); a.setAttribute('aria-label', 'Reset view'); // icon drawn in CSS
         L.DomEvent.on(a, 'click', (e) => { L.DomEvent.stop(e); goHome(); });
         return bar;
       },
@@ -520,7 +523,7 @@ window.MapView = (() => {
         }
       }
     }
-    map.on('zoomend moveend', debounce(updateTitles, 120));
+    map.on('zoomend moveend', debounce(() => { if (alive) updateTitles(); }, 120));
     function setTitles(on) { state.titles = !!on; persist.titles(); updateTitles(); }
     function setRegions(on) {
       state.regions = !!on;
@@ -559,7 +562,7 @@ window.MapView = (() => {
       // that window never calls back, so wait for its 'animationend' first.
       const whenSettled = (fn) => { if (group._inZoomAnimation) group.once('animationend', fn); else fn(); };
       const openIt = () => {
-        if (opened) return;
+        if (opened || !alive) return;
         opened = true;
         whenSettled(() => {
           if (entry.marker._icon || !group.zoomToShowLayer || !onMap.has(entry) || isCustomEntry(entry)) entry.marker.openPopup();
@@ -592,6 +595,7 @@ window.MapView = (() => {
       renderCounts();
       el.visibleCount.textContent = `${onMap.size} of ${entries.size} shown`;
       setTimeout(() => {
+        if (!alive) return;
         entry.marker.openPopup();
         const input = el.map.querySelector('[data-custom-title]');
         if (input) { input.focus(); input.select(); }
@@ -633,7 +637,8 @@ window.MapView = (() => {
         if (!groups.has(key)) groups.set(key, { key, title: r ? r.title : 'No region', items: [] });
         groups.get(key).items.push(entry);
       }
-      const list = [...groups.values()].sort((a, b) => b.items.length - a.items.length || a.title.localeCompare(b.title));
+      // named regions first (largest first), "No region" always last
+      const list = [...groups.values()].sort((a, b) => (a.key === 'none') - (b.key === 'none') || b.items.length - a.items.length || a.title.localeCompare(b.title));
       for (const g of list) g.items.sort((a, b) => a.category.title.localeCompare(b.category.title) || String(a.data.title).localeCompare(String(b.data.title)));
       return list;
     }
@@ -755,6 +760,10 @@ window.MapView = (() => {
     let openPopup = null;
     map.on('popupopen', (e) => { openPopup = e.popup; });
     map.on('popupclose', (e) => { delete e.popup._relaidOut; openPopup = null; });
+    // A popup near the map's edge needs room the pan limits don't allow (most of all in a small window),
+    // so they are lifted while a popup is open and the map eases back inside them once it closes.
+    map.on('popupopen', () => map.setMaxBounds(null));
+    map.on('popupclose', () => setTimeout(() => { if (alive && !openPopup) map.setMaxBounds(panBounds); }, 0));
 
     // ---------- sidebar ----------
     function categoryItem(c) {
@@ -890,7 +899,13 @@ window.MapView = (() => {
     // ---------- handlers used by the static wiring ----------
     return {
       source, gameSlug, mapSlug,
-      destroy() { flushBackup(); window.removeEventListener('beforeunload', flushBackup); map.remove(); openPopup = null; leftOpen = false; el.leftPanel.innerHTML = ''; el.leftBtn.classList.remove('active'); },
+      destroy() {
+        alive = false;
+        // keep the view the user left (a pending debounced save would otherwise be dropped)
+        try { const c = map.getCenter(); state.view = { x: c.lng, y: c.lat, zoom: map.getZoom() }; persist.view(); } catch { /* map not laid out */ }
+        map.stop();
+        map._animatingZoom = false; // Leaflet's zoom-end timer still runs after remove(); this makes it a no-op
+        flushBackup(); window.removeEventListener('beforeunload', flushBackup); map.remove(); openPopup = null; leftOpen = false; el.leftPanel.innerHTML = ''; el.leftBtn.classList.remove('active'); },
       focus: (id) => focusMarker(isCustomId(id) ? id : Number(id)),
       focusFirstResult() { if (firstResultId !== null) focusMarker(firstResultId); },
       onCategoryChange(e) {

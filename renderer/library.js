@@ -50,11 +50,14 @@ window.Library = (() => {
         const native = m.tiles.nativeMaxZoom || m.nativeMaxZoom || null;
         const partial = m.tiles.available && native && m.tiles.maxZoom < native;
         const tilesText = m.tiles.available ? `offline tiles to zoom ${m.tiles.maxZoom}${native ? ` of ${native}` : ''}` : 'online tiles';
+        // each fact stays on one line; the line breaks between them, never inside one
+        const meta = [`${m.markerCount || 0} locations`, tilesText, `${m.mediaCount} screenshots`].map((t) => `<span>${esc(t)}</span>`);
+        if (partial) meta.push(`<span><button type="button" class="link detail" data-detail="${esc(m.slug)}" title="Download the finer zoom levels">add detail</button></span>`);
         return `
         <li>
           <div>
             <div class="name">${esc(m.title)}</div>
-            <div class="meta">${m.markerCount || 0} locations · ${tilesText} · ${m.mediaCount} screenshots${partial ? ` · <button type="button" class="link detail" data-detail="${esc(m.slug)}" title="Download the finer zoom levels">add detail</button>` : ''}</div>
+            <div class="meta">${meta.join(' · ')}</div>
           </div>
           <button type="button" class="btn small-btn" data-open="${esc(m.slug)}" ${m.ready ? '' : 'disabled'}>Open</button>
         </li>`;
@@ -64,7 +67,7 @@ window.Library = (() => {
       const cover = g.cover ? `gamemap://${esc(g.source)}/${esc(g.slug)}/${esc(g.cover)}` : '';
       cards.push(`
         <article class="card game-card" data-game="${esc(g.slug)}" data-source="${esc(g.source)}">
-          <div class="hero${g.coverKind === 'logo' ? ' logo' : ''}"${cover ? ` style="background-image:url('${cover}')"` : ''}>
+          <div class="hero${!cover ? ' no-cover' : g.coverKind === 'logo' ? ' logo' : ''}"${cover ? ` style="background-image:url('${cover}')"` : ''}>
             ${g.source === 'bundled' ? '<span class="badge">bundled</span>' : ''}
             <h3 class="title">${esc(g.title)}</h3>
             <details class="menu">
@@ -165,7 +168,6 @@ window.Library = (() => {
         else el.log.lastChild.textContent = p.message;
         lastStage = p.stage;
         if (Number.isFinite(p.total) && p.total > 0) el.fill.style.width = `${Math.round((p.done / p.total) * 100)}%`;
-        el.status.textContent = p.stage === 'done' ? '' : p.message;
         el.stopBtn.classList.toggle('hidden', !(p.stage === 'tiles' && p.canStop));
       });
       try {
@@ -189,7 +191,7 @@ window.Library = (() => {
       el.progress.classList.remove('hidden');
       el.log.innerHTML = '';
       el.fill.style.width = '0%';
-      const unsubscribe = window.api.onJobProgress((p) => { logLine(p.message, p.stage === 'done' ? 'ok' : ''); el.status.textContent = p.stage === 'done' ? '' : p.message; });
+      const unsubscribe = window.api.onJobProgress((p) => logLine(p.message, p.stage === 'done' ? 'ok' : ''));
       try {
         const results = await window.api.refreshAllGames();
         el.fill.style.width = '100%';
