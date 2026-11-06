@@ -309,7 +309,7 @@ window.MapView = (() => {
       onAdd() {
         const bar = L.DomUtil.create('div', 'leaflet-bar');
         const a = L.DomUtil.create('a', 'mg-home', bar);
-        a.href = '#'; a.title = 'Reset view'; a.setAttribute('role', 'button'); a.setAttribute('aria-label', 'Reset view'); // icon drawn in CSS
+        a.href = '#'; a.title = 'Reset view'; a.setAttribute('role', 'button'); a.setAttribute('aria-label', 'Reset view'); a.innerHTML = '<span class="ico ico-home" aria-hidden="true"></span>';
         L.DomEvent.on(a, 'click', (e) => { L.DomEvent.stop(e); goHome(); });
         return bar;
       },
@@ -346,7 +346,7 @@ window.MapView = (() => {
         `background-position:${-frame.x * scale}px ${-frame.y * scale}px;` +
         `width:${frame.width * scale}px;height:${frame.height * scale}px`;
     }
-    const smallIcon = (category) => (category.id === CUSTOM ? '<span class="custom-dot">★</span>' : `<span class="cat-icon" style="${spriteStyle(frameFor(category), 0.5)}"></span>`);
+    const smallIcon = (category) => (category.id === CUSTOM ? '<span class="custom-dot"><span class="ico ico-star" aria-hidden="true"></span></span>' : `<span class="cat-icon" style="${spriteStyle(frameFor(category), 0.5)}"></span>`);
     const iconCache = new Map();
     function iconFor(category, collected) {
       const key = `${category.id}|${collected ? 1 : 0}`;
@@ -651,7 +651,7 @@ window.MapView = (() => {
           const head = e.category.id !== lastCat ? `<li class="left-cat">${esc(e.category.title)}</li>` : '';
           lastCat = e.category.id;
           const sub = (state.notes[e.data.id] || e.data.description || '').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\*\*?/g, '').replace(/\s+/g, ' ').trim().slice(0, 80);
-          return `${head}<li class="left-item" data-id="${esc(e.data.id)}"><span class="left-text"><span class="left-title">${esc(e.data.title)}</span>${sub ? `<span class="left-sub">${esc(sub)}</span>` : ''}</span>${state.notes[e.data.id] ? '<span class="muted" title="has a note">✎</span>' : ''}</li>`;
+          return `${head}<li class="left-item" data-id="${esc(e.data.id)}"><span class="left-text"><span class="left-title">${esc(e.data.title)}</span>${sub ? `<span class="left-sub">${esc(sub)}</span>` : ''}</span>${state.notes[e.data.id] ? '<span class="ico ico-note muted" title="has a note"></span>' : ''}</li>`;
         }).join('');
         return `
           <section class="left-region">
@@ -715,8 +715,8 @@ window.MapView = (() => {
         const done = isCollected(e.data.id);
         return `<li class="result${done ? ' done' : ''}" data-id="${esc(e.data.id)}">
           ${smallIcon(e.category)}
-          <span class="result-text"><span class="result-title">${esc(e.data.title || 'My marker')}</span><span class="result-meta">${esc(e.category.title)}${r ? ` · ${esc(r.title)}` : ''}${state.notes[e.data.id] ? ' · ✎ note' : ''}</span></span>
-          ${done ? '<span class="result-check">✓</span>' : ''}
+          <span class="result-text"><span class="result-title">${esc(e.data.title || 'My marker')}</span><span class="result-meta">${esc(e.category.title)}${r ? ` · ${esc(r.title)}` : ''}${state.notes[e.data.id] ? ' · has a note' : ''}</span></span>
+          ${done ? '<span class="result-check ico ico-check" title="collected"></span>' : ''}
         </li>`;
       }).join('');
       el.results.innerHTML = `<div class="results-head">${matches.length} match${matches.length === 1 ? '' : 'es'}${matches.length > RESULT_LIMIT ? ` · showing the first ${RESULT_LIMIT}` : ''} · Enter jumps to the first</div><ul>${items}</ul>`;
@@ -727,7 +727,7 @@ window.MapView = (() => {
     const mediaSrc = (media) => (localMedia.has(media.file) ? `${mapBase}/media/${media.file}` : media.url);
     function popupHtml(m) {
       const collected = isCollected(m.id);
-      const toggle = `<button type="button" class="pp-toggle${collected ? ' done' : ''}" data-toggle="${esc(m.id)}">${collected ? '✓ Collected · click to undo' : 'Mark as collected'}</button>`;
+      const toggle = `<button type="button" class="pp-toggle${collected ? ' done' : ''}" data-toggle="${esc(m.id)}">${collected ? '<span class="ico ico-check" aria-hidden="true"></span>Collected · click to undo' : 'Mark as collected'}</button>`;
       if (m.categoryId === CUSTOM) {
         return `
           <div class="pp pp-custom">
@@ -744,11 +744,11 @@ window.MapView = (() => {
       const media = m.media[0];
       return `
         <div class="pp">
+          <h3 class="pp-title">${esc(m.title)}</h3>
           <div class="pp-head">
             <span class="pp-cat" style="color:${(g && g.color) || '#9aa'}">${esc(c.title)}</span>
             ${r ? `<span class="pp-sep">·</span><span class="pp-region">${esc(r.title)}</span>` : ''}
           </div>
-          <h3 class="pp-title">${esc(m.title)}</h3>
           ${m.description ? `<div class="pp-desc">${md(m.description)}</div>` : ''}
           ${!m.description && c.info ? `<div class="pp-desc muted">${md(c.info)}</div>` : ''}
           ${media ? `<div class="pp-media${media.spoiler ? ' spoiler' : ''}"><img src="${esc(mediaSrc(media))}" alt="" loading="lazy"></div>` : ''}
@@ -774,11 +774,12 @@ window.MapView = (() => {
             ${smallIcon(c)}
             <span class="cat-title" title="${esc(c.info || c.title)}">${esc(c.title)}</span>
           </label>
-          <button type="button" class="track${isTracked(c.id) ? ' on' : ''}" data-track="${c.id}" title="${isTracked(c.id) ? 'Counts toward progress — click to leave it out' : 'Not counted toward progress — click to count it'}">★</button>
+          <button type="button" class="track${isTracked(c.id) ? ' on' : ''}" data-track="${c.id}" title="${isTracked(c.id) ? 'Counts toward progress — click to leave it out' : 'Not counted toward progress — click to count it'}"><span class="ico ico-star" aria-hidden="true"></span></button>
           <span class="count" data-cat-count="${c.id}"></span>
         </li>`;
     }
     function syncTrackUI() {
+      el.categories.classList.toggle('tracking-custom', !!state.tracked);
       for (const b of el.categories.querySelectorAll('[data-track]')) {
         const on = isTracked(Number(b.dataset.track));
         b.classList.toggle('on', on);
@@ -881,12 +882,12 @@ window.MapView = (() => {
         if (isCollected(entry.data.id)) found++;
       }
       const pct = total ? Math.round((found / total) * 100) : 0;
-      el.progressText.textContent = `${found} / ${total} found`;
+      el.progressText.innerHTML = `<strong>${found}</strong> / ${total} found`;
       el.progressPct.textContent = `${pct}%`;
       el.progressFill.style.width = `${pct}%`;
       const trackedCount = state.tracked ? state.tracked.length : data.categories.length;
       el.progressNote.classList.toggle('hidden', !state.tracked);
-      if (state.tracked) el.progressNote.innerHTML = `${trackedCount} of ${data.categories.length} categories counted (★ in the list) · <button type="button" class="link" data-track-all="1">count all</button>`;
+      if (state.tracked) el.progressNote.innerHTML = `${trackedCount} of ${data.categories.length} categories counted (starred in the list) · <button type="button" class="link" data-track-all="1">count all</button>`;
       renderCounts();
     }
 

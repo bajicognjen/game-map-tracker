@@ -69,9 +69,8 @@ window.Library = (() => {
         <article class="card game-card" data-game="${esc(g.slug)}" data-source="${esc(g.source)}">
           <div class="hero${!cover ? ' no-cover' : g.coverKind === 'logo' ? ' logo' : ''}"${cover ? ` style="background-image:url('${cover}')"` : ''}>
             ${g.source === 'bundled' ? '<span class="badge">bundled</span>' : ''}
-            <h3 class="title">${esc(g.title)}</h3>
             <details class="menu">
-              <summary title="More actions" aria-label="More actions">···</summary>
+              <summary title="More actions" aria-label="More actions"><span class="ico ico-more" aria-hidden="true"></span></summary>
               <div class="menu-items">
                 <button type="button" data-update="1" title="Re-read the map data from its site and fetch anything missing">Update from the site</button>
                 <button type="button" data-clean="tiles" ${tiles ? '' : 'disabled'} title="Delete the offline tiles; the map then streams them from the site">Delete offline tiles <span class="size">${MB(tiles)}</span></button>
@@ -81,6 +80,7 @@ window.Library = (() => {
             </details>
           </div>
           <div class="card-body">
+            <h3 class="title">${esc(g.title)}</h3>
             <div>
               <div class="progress-line"><span>${p.found} / ${p.total} found</span><span class="pct">${p.pct}%</span></div>
               <div class="progress-bar"><div style="width:${p.pct}%"></div></div>

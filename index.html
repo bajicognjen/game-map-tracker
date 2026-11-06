@@ -108,7 +108,7 @@
     <aside id="sidebar">
       <header class="sidebar-header">
         <div class="row between">
-          <button type="button" id="back-library" class="link back">← Library</button>
+          <button type="button" id="back-library" class="link back"><span class="ico ico-back" aria-hidden="true"></span>Library</button>
           <select id="map-select" class="hidden" title="Switch map"></select>
         </div>
         <h1 id="game-title"></h1>
@@ -126,7 +126,7 @@
 
       <section class="controls">
         <div class="search-wrap">
-          <input id="search" type="search" placeholder="Search locations  ( / )" autocomplete="off" spellcheck="false">
+          <input id="search" type="search" placeholder="Search locations" autocomplete="off" spellcheck="false"><kbd aria-hidden="true">/</kbd>
         </div>
         <div class="chips">
           <label class="chip"><input type="checkbox" id="hide-collected"><span>Hide collected</span></label>
@@ -137,7 +137,7 @@
         <div class="row">
           <select id="region-filter" title="Show one region only"><option value="">All regions</option></select>
           <span class="spacer"></span>
-          <button type="button" id="next-uncollected" class="btn small-btn" title="Jump to the nearest uncollected marker (N)">Next uncollected ▸</button>
+          <button type="button" id="next-uncollected" class="btn small-btn" title="Jump to the nearest uncollected marker (N)">Next uncollected <kbd aria-hidden="true">N</kbd></button>
         </div>
         <div class="row between small muted list-tools">
           <span id="visible-count"></span>
