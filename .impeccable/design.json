@@ -1,0 +1,718 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-06T16:11:58.459Z",
+  "title": "Design System: Game Map Tracker",
+  "extensions": {
+    "colorMeta": {
+      "pit-lane-cyan": {
+        "role": "primary",
+        "displayName": "Pit-Lane Cyan",
+        "canonical": "#5ec8ff",
+        "oklch": "oklch(79.2% 0.125 234.1)",
+        "tonalRamp": [
+          "oklch(15% 0.077 234.1)",
+          "oklch(26.4% 0.085 234.1)",
+          "oklch(37.9% 0.094 234.1)",
+          "oklch(49.3% 0.102 234.1)",
+          "oklch(60.7% 0.111 234.1)",
+          "oklch(72.1% 0.12 234.1)",
+          "oklch(83.6% 0.122 234.1)",
+          "oklch(95% 0.113 234.1)"
+        ]
+      },
+      "pit-lane-ink": {
+        "role": "on-primary",
+        "displayName": "Pit-Lane Ink",
+        "canonical": "#06202e",
+        "oklch": "oklch(23.1% 0.041 235.8)",
+        "tonalRamp": [
+          "oklch(15% 0.039 235.8)",
+          "oklch(26.4% 0.041 235.8)",
+          "oklch(37.9% 0.038 235.8)",
+          "oklch(49.3% 0.035 235.8)",
+          "oklch(60.7% 0.032 235.8)",
+          "oklch(72.1% 0.029 235.8)",
+          "oklch(83.6% 0.026 235.8)",
+          "oklch(95% 0.024 235.8)"
+        ]
+      },
+      "pit-lane-soft": {
+        "role": "primary-container",
+        "displayName": "Pit-Lane Soft",
+        "canonical": "rgba(94, 200, 255, .14)",
+        "oklch": "oklch(79.2% 0.125 234.1 / 0.14)",
+        "tonalRamp": [
+          "oklch(15% 0.077 234.1)",
+          "oklch(26.4% 0.085 234.1)",
+          "oklch(37.9% 0.094 234.1)",
+          "oklch(49.3% 0.102 234.1)",
+          "oklch(60.7% 0.111 234.1)",
+          "oklch(72.1% 0.12 234.1)",
+          "oklch(83.6% 0.122 234.1)",
+          "oklch(95% 0.113 234.1)"
+        ]
+      },
+      "green-flag": {
+        "role": "secondary",
+        "displayName": "Green Flag",
+        "canonical": "#3ddc84",
+        "oklch": "oklch(79.3% 0.18 154)",
+        "tonalRamp": [
+          "oklch(15% 0.111 154)",
+          "oklch(26.4% 0.123 154)",
+          "oklch(37.9% 0.135 154)",
+          "oklch(49.3% 0.148 154)",
+          "oklch(60.7% 0.16 154)",
+          "oklch(72.1% 0.173 154)",
+          "oklch(83.6% 0.176 154)",
+          "oklch(95% 0.163 154)"
+        ]
+      },
+      "green-flag-ink": {
+        "role": "on-secondary",
+        "displayName": "Green Flag Ink",
+        "canonical": "#05210f",
+        "oklch": "oklch(22.1% 0.049 152.4)",
+        "tonalRamp": [
+          "oklch(15% 0.047 152.4)",
+          "oklch(26.4% 0.048 152.4)",
+          "oklch(37.9% 0.044 152.4)",
+          "oklch(49.3% 0.041 152.4)",
+          "oklch(60.7% 0.038 152.4)",
+          "oklch(72.1% 0.034 152.4)",
+          "oklch(83.6% 0.031 152.4)",
+          "oklch(95% 0.028 152.4)"
+        ]
+      },
+      "green-flag-soft": {
+        "role": "secondary-container",
+        "displayName": "Green Flag Soft",
+        "canonical": "rgba(61, 220, 132, .14)",
+        "oklch": "oklch(79.3% 0.18 154 / 0.14)",
+        "tonalRamp": [
+          "oklch(15% 0.111 154)",
+          "oklch(26.4% 0.123 154)",
+          "oklch(37.9% 0.135 154)",
+          "oklch(49.3% 0.148 154)",
+          "oklch(60.7% 0.16 154)",
+          "oklch(72.1% 0.173 154)",
+          "oklch(83.6% 0.176 154)",
+          "oklch(95% 0.163 154)"
+        ]
+      },
+      "tracked-gold": {
+        "role": "tertiary",
+        "displayName": "Tracked Gold",
+        "canonical": "#ffd166",
+        "oklch": "oklch(88% 0.135 86.1)",
+        "tonalRamp": [
+          "oklch(15% 0.076 86.1)",
+          "oklch(26.4% 0.085 86.1)",
+          "oklch(37.9% 0.094 86.1)",
+          "oklch(49.3% 0.103 86.1)",
+          "oklch(60.7% 0.113 86.1)",
+          "oklch(72.1% 0.122 86.1)",
+          "oklch(83.6% 0.131 86.1)",
+          "oklch(95% 0.129 86.1)"
+        ]
+      },
+      "own-marker-amber": {
+        "role": "tertiary",
+        "displayName": "Own-Marker Amber",
+        "canonical": "#ffb347",
+        "oklch": "oklch(82.1% 0.149 72.1)",
+        "tonalRamp": [
+          "oklch(15% 0.089 72.1)",
+          "oklch(26.4% 0.099 72.1)",
+          "oklch(37.9% 0.109 72.1)",
+          "oklch(49.3% 0.119 72.1)",
+          "oklch(60.7% 0.13 72.1)",
+          "oklch(72.1% 0.14 72.1)",
+          "oklch(83.6% 0.147 72.1)",
+          "oklch(95% 0.137 72.1)"
+        ]
+      },
+      "own-marker-ink": {
+        "role": "on-tertiary",
+        "displayName": "Own-Marker Ink",
+        "canonical": "#3a2a00",
+        "oklch": "oklch(29.6% 0.061 86.2)",
+        "tonalRamp": [
+          "oklch(15% 0.055 86.2)",
+          "oklch(26.4% 0.059 86.2)",
+          "oklch(37.9% 0.057 86.2)",
+          "oklch(49.3% 0.053 86.2)",
+          "oklch(60.7% 0.049 86.2)",
+          "oklch(72.1% 0.045 86.2)",
+          "oklch(83.6% 0.041 86.2)",
+          "oklch(95% 0.037 86.2)"
+        ]
+      },
+      "danger-coral": {
+        "role": "error",
+        "displayName": "Danger Coral",
+        "canonical": "#ff6b6b",
+        "oklch": "oklch(71.2% 0.181 22.8)",
+        "tonalRamp": [
+          "oklch(15% 0.12 22.8)",
+          "oklch(26.4% 0.133 22.8)",
+          "oklch(37.9% 0.145 22.8)",
+          "oklch(49.3% 0.157 22.8)",
+          "oklch(60.7% 0.17 22.8)",
+          "oklch(72.1% 0.18 22.8)",
+          "oklch(83.6% 0.168 22.8)",
+          "oklch(95% 0.155 22.8)"
+        ]
+      },
+      "cluster-cyan-light": {
+        "role": "primary",
+        "displayName": "Cluster Cyan Light",
+        "canonical": "#9fe0ff",
+        "oklch": "oklch(87.4% 0.078 229.2)",
+        "tonalRamp": [
+          "oklch(15% 0.044 229.2)",
+          "oklch(26.4% 0.05 229.2)",
+          "oklch(37.9% 0.055 229.2)",
+          "oklch(49.3% 0.06 229.2)",
+          "oklch(60.7% 0.066 229.2)",
+          "oklch(72.1% 0.071 229.2)",
+          "oklch(83.6% 0.076 229.2)",
+          "oklch(95% 0.075 229.2)"
+        ]
+      },
+      "cluster-cyan": {
+        "role": "primary",
+        "displayName": "Cluster Cyan",
+        "canonical": "#45b8f5",
+        "oklch": "oklch(74.4% 0.134 236.1)",
+        "tonalRamp": [
+          "oklch(15% 0.086 236.1)",
+          "oklch(26.4% 0.096 236.1)",
+          "oklch(37.9% 0.105 236.1)",
+          "oklch(49.3% 0.114 236.1)",
+          "oklch(60.7% 0.123 236.1)",
+          "oklch(72.1% 0.132 236.1)",
+          "oklch(83.6% 0.127 236.1)",
+          "oklch(95% 0.118 236.1)"
+        ]
+      },
+      "cluster-green-light": {
+        "role": "secondary",
+        "displayName": "Cluster Green Light",
+        "canonical": "#a6f5c8",
+        "oklch": "oklch(90.7% 0.1 158.7)",
+        "tonalRamp": [
+          "oklch(15% 0.054 158.7)",
+          "oklch(26.4% 0.061 158.7)",
+          "oklch(37.9% 0.068 158.7)",
+          "oklch(49.3% 0.075 158.7)",
+          "oklch(60.7% 0.082 158.7)",
+          "oklch(72.1% 0.089 158.7)",
+          "oklch(83.6% 0.095 158.7)",
+          "oklch(95% 0.097 158.7)"
+        ]
+      },
+      "cluster-green": {
+        "role": "secondary",
+        "displayName": "Cluster Green",
+        "canonical": "#2fd07e",
+        "oklch": "oklch(75.9% 0.174 155.1)",
+        "tonalRamp": [
+          "oklch(15% 0.111 155.1)",
+          "oklch(26.4% 0.123 155.1)",
+          "oklch(37.9% 0.135 155.1)",
+          "oklch(49.3% 0.147 155.1)",
+          "oklch(60.7% 0.159 155.1)",
+          "oklch(72.1% 0.17 155.1)",
+          "oklch(83.6% 0.166 155.1)",
+          "oklch(95% 0.154 155.1)"
+        ]
+      },
+      "night-asphalt": {
+        "role": "neutral",
+        "displayName": "Night Asphalt",
+        "canonical": "#0b0f14",
+        "oklch": "oklch(16.7% 0.012 254.2)",
+        "tonalRamp": [
+          "oklch(15% 0.012 254.2)",
+          "oklch(26.4% 0.012 254.2)",
+          "oklch(37.9% 0.011 254.2)",
+          "oklch(49.3% 0.01 254.2)",
+          "oklch(60.7% 0.009 254.2)",
+          "oklch(72.1% 0.008 254.2)",
+          "oklch(83.6% 0.007 254.2)",
+          "oklch(95% 0.007 254.2)"
+        ]
+      },
+      "map-void": {
+        "role": "neutral",
+        "displayName": "Map Void",
+        "canonical": "#080b10",
+        "oklch": "oklch(14.9% 0.012 259.7)",
+        "tonalRamp": [
+          "oklch(15% 0.012 259.7)",
+          "oklch(26.4% 0.011 259.7)",
+          "oklch(37.9% 0.01 259.7)",
+          "oklch(49.3% 0.01 259.7)",
+          "oklch(60.7% 0.009 259.7)",
+          "oklch(72.1% 0.008 259.7)",
+          "oklch(83.6% 0.007 259.7)",
+          "oklch(95% 0.006 259.7)"
+        ]
+      },
+      "inset-asphalt": {
+        "role": "neutral",
+        "displayName": "Inset Asphalt",
+        "canonical": "#10151c",
+        "oklch": "oklch(19.4% 0.016 256.8)",
+        "tonalRamp": [
+          "oklch(15% 0.016 256.8)",
+          "oklch(26.4% 0.016 256.8)",
+          "oklch(37.9% 0.014 256.8)",
+          "oklch(49.3% 0.013 256.8)",
+          "oklch(60.7% 0.012 256.8)",
+          "oklch(72.1% 0.011 256.8)",
+          "oklch(83.6% 0.01 256.8)",
+          "oklch(95% 0.009 256.8)"
+        ]
+      },
+      "slate-panel": {
+        "role": "neutral",
+        "displayName": "Slate Panel",
+        "canonical": "#151b23",
+        "oklch": "oklch(22% 0.018 255.7)",
+        "tonalRamp": [
+          "oklch(15% 0.017 255.7)",
+          "oklch(26.4% 0.018 255.7)",
+          "oklch(37.9% 0.016 255.7)",
+          "oklch(49.3% 0.015 255.7)",
+          "oklch(60.7% 0.014 255.7)",
+          "oklch(72.1% 0.013 255.7)",
+          "oklch(83.6% 0.011 255.7)",
+          "oklch(95% 0.01 255.7)"
+        ]
+      },
+      "raised-slate": {
+        "role": "neutral",
+        "displayName": "Raised Slate",
+        "canonical": "#1b222c",
+        "oklch": "oklch(25% 0.022 257.3)",
+        "tonalRamp": [
+          "oklch(15% 0.02 257.3)",
+          "oklch(26.4% 0.021 257.3)",
+          "oklch(37.9% 0.02 257.3)",
+          "oklch(49.3% 0.018 257.3)",
+          "oklch(60.7% 0.017 257.3)",
+          "oklch(72.1% 0.016 257.3)",
+          "oklch(83.6% 0.014 257.3)",
+          "oklch(95% 0.013 257.3)"
+        ]
+      },
+      "hover-slate": {
+        "role": "neutral",
+        "displayName": "Hover Slate",
+        "canonical": "#232c37",
+        "oklch": "oklch(28.9% 0.024 253.7)",
+        "tonalRamp": [
+          "oklch(15% 0.022 253.7)",
+          "oklch(26.4% 0.023 253.7)",
+          "oklch(37.9% 0.023 253.7)",
+          "oklch(49.3% 0.021 253.7)",
+          "oklch(60.7% 0.019 253.7)",
+          "oklch(72.1% 0.018 253.7)",
+          "oklch(83.6% 0.016 253.7)",
+          "oklch(95% 0.014 253.7)"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#242d38",
+        "oklch": "oklch(29.4% 0.024 253.7)",
+        "tonalRamp": [
+          "oklch(15% 0.022 253.7)",
+          "oklch(26.4% 0.023 253.7)",
+          "oklch(37.9% 0.023 253.7)",
+          "oklch(49.3% 0.021 253.7)",
+          "oklch(60.7% 0.019 253.7)",
+          "oklch(72.1% 0.018 253.7)",
+          "oklch(83.6% 0.016 253.7)",
+          "oklch(95% 0.014 253.7)"
+        ]
+      },
+      "strong-hairline": {
+        "role": "neutral",
+        "displayName": "Strong Hairline",
+        "canonical": "#323d4b",
+        "oklch": "oklch(35.6% 0.028 254.6)",
+        "tonalRamp": [
+          "oklch(15% 0.025 254.6)",
+          "oklch(26.4% 0.027 254.6)",
+          "oklch(37.9% 0.028 254.6)",
+          "oklch(49.3% 0.026 254.6)",
+          "oklch(60.7% 0.024 254.6)",
+          "oklch(72.1% 0.022 254.6)",
+          "oklch(83.6% 0.02 254.6)",
+          "oklch(95% 0.018 254.6)"
+        ]
+      },
+      "track-off": {
+        "role": "neutral",
+        "displayName": "Track Off",
+        "canonical": "#5f6b7a",
+        "oklch": "oklch(52.3% 0.028 254.1)",
+        "tonalRamp": [
+          "oklch(15% 0.022 254.1)",
+          "oklch(26.4% 0.024 254.1)",
+          "oklch(37.9% 0.025 254.1)",
+          "oklch(49.3% 0.027 254.1)",
+          "oklch(60.7% 0.026 254.1)",
+          "oklch(72.1% 0.025 254.1)",
+          "oklch(83.6% 0.023 254.1)",
+          "oklch(95% 0.021 254.1)"
+        ]
+      },
+      "soft-white": {
+        "role": "neutral",
+        "displayName": "Soft White",
+        "canonical": "#e8eef4",
+        "oklch": "oklch(94.6% 0.01 247.9)",
+        "tonalRamp": [
+          "oklch(15% 0.005 247.9)",
+          "oklch(26.4% 0.006 247.9)",
+          "oklch(37.9% 0.007 247.9)",
+          "oklch(49.3% 0.008 247.9)",
+          "oklch(60.7% 0.008 247.9)",
+          "oklch(72.1% 0.009 247.9)",
+          "oklch(83.6% 0.01 247.9)",
+          "oklch(95% 0.01 247.9)"
+        ]
+      },
+      "secondary-gray": {
+        "role": "neutral",
+        "displayName": "Secondary Gray",
+        "canonical": "#b9c4ce",
+        "oklch": "oklch(81.5% 0.019 245.4)",
+        "tonalRamp": [
+          "oklch(15% 0.011 245.4)",
+          "oklch(26.4% 0.012 245.4)",
+          "oklch(37.9% 0.014 245.4)",
+          "oklch(49.3% 0.015 245.4)",
+          "oklch(60.7% 0.016 245.4)",
+          "oklch(72.1% 0.018 245.4)",
+          "oklch(83.6% 0.018 245.4)",
+          "oklch(95% 0.017 245.4)"
+        ]
+      },
+      "muted-steel": {
+        "role": "neutral",
+        "displayName": "Muted Steel",
+        "canonical": "#8794a2",
+        "oklch": "oklch(66.1% 0.026 250.2)",
+        "tonalRamp": [
+          "oklch(15% 0.018 250.2)",
+          "oklch(26.4% 0.02 250.2)",
+          "oklch(37.9% 0.021 250.2)",
+          "oklch(49.3% 0.023 250.2)",
+          "oklch(60.7% 0.025 250.2)",
+          "oklch(72.1% 0.025 250.2)",
+          "oklch(83.6% 0.023 250.2)",
+          "oklch(95% 0.021 250.2)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "count": {
+        "displayName": "Count",
+        "purpose": "The found number at the top of the map sidebar."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Library section headings; the app name at 17px."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card headings, game-card titles, the sidebar game title; popup titles at 15.5px."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default text, buttons (500) and fields."
+      },
+      "list": {
+        "displayName": "List",
+        "purpose": "Category rows, What's left items, map rows in a game card."
+      },
+      "body-small": {
+        "displayName": "Body small",
+        "purpose": "Download log, progress line, back link, top-bar and footer buttons, popup notes."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Meta lines, counts, chips, small buttons, help text, the version."
+      },
+      "overline": {
+        "displayName": "Overline",
+        "purpose": "Uppercase group and region headings."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Folder paths and inline code."
+      },
+      "key": {
+        "displayName": "Key",
+        "purpose": "Keyboard hints on controls (/, N, C) and guide step numbers."
+      }
+    },
+    "shadows": [
+      {
+        "name": "rest",
+        "value": "0 1px 2px rgba(0, 0, 0, .35), 0 2px 8px rgba(0, 0, 0, .25)",
+        "purpose": "Cards, map controls, tooltips, the brand icon."
+      },
+      {
+        "name": "top-light",
+        "value": "inset 0 1px 0 rgba(255, 255, 255, .04)",
+        "purpose": "Paired with rest on cards and with float on popups and menus; alone on buttons."
+      },
+      {
+        "name": "float",
+        "value": "0 10px 30px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .35)",
+        "purpose": "Popups, menus, the toast, the update banner, the skip link, a hovered game card."
+      },
+      {
+        "name": "pressed-in",
+        "value": "inset 0 1px 2px rgba(0, 0, 0, .25)",
+        "purpose": "Text fields and selects (progress track: inset 0 1px 1px rgba(0, 0, 0, .35))."
+      },
+      {
+        "name": "focus-ring",
+        "value": "0 0 0 3px rgba(94, 200, 255, .22)",
+        "purpose": "Fields while focused."
+      },
+      {
+        "name": "pin-drop",
+        "value": "drop-shadow(0 2px 3px rgba(0, 0, 0, .7))",
+        "purpose": "Marker pins over map tiles (a filter, not a box-shadow)."
+      },
+      {
+        "name": "cluster",
+        "value": "0 2px 6px rgba(0, 0, 0, .55), 0 0 0 1px rgba(6, 32, 46, .35)",
+        "purpose": "Marker clusters, with a 2px near-white border."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(.2, .7, .2, 1)",
+        "purpose": "The one shared easing curve."
+      },
+      {
+        "name": "state",
+        "value": "150ms",
+        "purpose": "Background, border, color and small transforms on hover and focus."
+      },
+      {
+        "name": "card-lift",
+        "value": "180ms",
+        "purpose": "A game card lifting on hover."
+      },
+      {
+        "name": "menu-pop",
+        "value": "140ms",
+        "purpose": "The game-card menu popping in (4px drop, 98% scale)."
+      },
+      {
+        "name": "toast",
+        "value": "200ms",
+        "purpose": "Toast rising 8px and fading in."
+      },
+      {
+        "name": "progress",
+        "value": "400ms",
+        "purpose": "Progress bar width changes."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce",
+        "purpose": "Every transition and animation becomes effectively instant."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "window-min",
+        "value": "960px x 600px",
+        "purpose": "Minimum window size; desktop only, no mobile layout."
+      },
+      {
+        "name": "library-max",
+        "value": "1120px",
+        "purpose": "Library content column width."
+      },
+      {
+        "name": "sidebar",
+        "value": "328px",
+        "purpose": "Fixed map sidebar width."
+      }
+    ],
+    "icons": {
+      "grid": "24 units",
+      "stroke": "2.2 (2.4 plus/minus/close, 2.8 check)",
+      "caps": "round",
+      "delivery": "CSS mask over currentColor",
+      "set": [
+        "search",
+        "back",
+        "home",
+        "plus",
+        "minus",
+        "close",
+        "check",
+        "star",
+        "more",
+        "note",
+        "chevron"
+      ]
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action in an area: \"Look up\", \"Add game\", \"Update to …\".",
+      "html": "<button class=\"ds-btn-primary\">Look up</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 34px; padding: 0 14px; border-radius: var(--radius-s, 8px); font: 500 14px/1.45 system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, sans-serif; cursor: pointer; white-space: nowrap; transition: background .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), border-color .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), color .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), transform .1s var(--ease, cubic-bezier(.2, .7, .2, 1)), box-shadow .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), filter .15s var(--ease, cubic-bezier(.2, .7, .2, 1)); background: var(--accent, #5ec8ff); border: 1px solid var(--accent, #5ec8ff); color: var(--accent-ink, #06202e); font-weight: 650; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 1px 2px rgba(0, 0, 0, .3); } .ds-btn-primary:hover { filter: brightness(1.07); } .ds-btn-primary:active { transform: translateY(1px); box-shadow: none; } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent, #5ec8ff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default action, with the top light at rest; small variant (28px, 6px corners) for \"Open\" and \"Next uncollected\".",
+      "html": "<span style=\"display:inline-flex;gap:10px;align-items:center\"><button class=\"ds-btn\">Change…</button><button class=\"ds-btn ds-btn-small\">Next uncollected <kbd class=\"ds-kbd\">N</kbd></button></span>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 34px; padding: 0 14px; border-radius: var(--radius-s, 8px); font: 500 14px/1.45 system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, sans-serif; cursor: pointer; white-space: nowrap; transition: background .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), border-color .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), color .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), transform .1s var(--ease, cubic-bezier(.2, .7, .2, 1)), box-shadow .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), filter .15s var(--ease, cubic-bezier(.2, .7, .2, 1)); background: var(--panel-2, #1b222c); border: 1px solid var(--border-2, #323d4b); color: var(--text, #e8eef4); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04); } .ds-btn:hover { background: var(--panel-3, #232c37); } .ds-btn:active { transform: translateY(1px); box-shadow: none; } .ds-btn-small { height: 28px; padding: 0 10px; font-size: 12.5px; border-radius: var(--radius-xs, 6px); gap: 6px; } .ds-kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 5px; background: var(--panel-3, #232c37); border: 1px solid var(--border-2, #323d4b); box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .4); color: var(--text-2, #b9c4ce); font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; } .ds-btn:focus-visible { outline: 2px solid var(--accent, #5ec8ff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Top-bar and toolbar actions that should recede: \"Settings\", \"Export all progress\".",
+      "html": "<button class=\"ds-btn-ghost\">Settings</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 34px; padding: 0 14px; border-radius: var(--radius-s, 8px); font: 500 14px/1.45 system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, sans-serif; cursor: pointer; white-space: nowrap; transition: background .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), border-color .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), color .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), transform .1s var(--ease, cubic-bezier(.2, .7, .2, 1)), box-shadow .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), filter .15s var(--ease, cubic-bezier(.2, .7, .2, 1)); background: transparent; border: 1px solid transparent; color: var(--text-2, #b9c4ce); } .ds-btn-ghost:hover { background: var(--panel-2, #1b222c); color: var(--text, #e8eef4); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--accent, #5ec8ff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Recessed field with the drawn magnifier (cyan on focus), the / key hint and the 3px focus ring.",
+      "html": "<label class=\"ds-search\"><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" class=\"ds-search-icon\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"m20 20-3.6-3.6\"/></svg><input class=\"ds-input\" type=\"search\" placeholder=\"Search locations\"><kbd class=\"ds-kbd\">/</kbd></label>",
+      "css": ".ds-search { position: relative; display: block; width: 296px; } .ds-search-icon { position: absolute; left: 11px; top: 50%; width: 15px; height: 15px; transform: translateY(-50%); color: var(--muted, #8794a2); pointer-events: none; transition: color .15s var(--ease, cubic-bezier(.2, .7, .2, 1)); } .ds-search:focus-within .ds-search-icon { color: var(--accent, #5ec8ff); } .ds-input { width: 100%; height: 34px; padding: 0 34px 0 33px; background: var(--bg-2, #10151c); border: 1px solid var(--border-2, #323d4b); border-radius: var(--radius-s, 8px); color: var(--text, #e8eef4); font: 14px/1.45 system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, sans-serif; caret-color: var(--accent, #5ec8ff); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .25); transition: border-color .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), box-shadow .15s var(--ease, cubic-bezier(.2, .7, .2, 1)); } .ds-input::placeholder { color: var(--muted, #8794a2); } .ds-input:focus { outline: none; border-color: var(--accent, #5ec8ff); box-shadow: 0 0 0 3px rgba(94, 200, 255, .22); } .ds-search .ds-kbd { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); pointer-events: none; } .ds-search:focus-within .ds-kbd { display: none; } .ds-kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 5px; background: var(--panel-3, #232c37); border: 1px solid var(--border-2, #323d4b); box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .4); color: var(--text-2, #b9c4ce); font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "A checkbox styled as a pill toggle: \"Hide collected\", \"Cluster\", \"Regions\", \"Titles\".",
+      "html": "<span class=\"ds-chips\"><label class=\"ds-chip\"><input type=\"checkbox\"><span>Hide collected</span></label><label class=\"ds-chip\"><input type=\"checkbox\" checked><span>Cluster</span></label></span>",
+      "css": ".ds-chips { display: inline-flex; gap: 6px; } .ds-chip { position: relative; display: inline-flex; align-items: center; height: 26px; padding: 0 9px; border-radius: 999px; font: 12px/1.45 system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, sans-serif; cursor: pointer; background: var(--panel-2, #1b222c); border: 1px solid var(--border-2, #323d4b); color: var(--text-2, #b9c4ce); user-select: none; transition: background .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), border-color .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), color .15s var(--ease, cubic-bezier(.2, .7, .2, 1)); } .ds-chip input { position: absolute; opacity: 0; width: 0; height: 0; } .ds-chip:hover { border-color: var(--accent, #5ec8ff); color: var(--text, #e8eef4); } .ds-chip:has(input:checked) { background: var(--accent-soft, rgba(94, 200, 255, .14)); border-color: rgba(94, 200, 255, .6); color: var(--text, #e8eef4); } .ds-chip:has(input:focus-visible) { outline: 2px solid var(--accent, #5ec8ff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Game Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "A Library card: cover band, title below it, progress, hairline-separated map rows, storage. Rests with a faint shadow, lifts on hover.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-card-hero\"><button class=\"ds-card-more\" aria-label=\"More actions\"><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"5\" cy=\"12\" r=\"2\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"12\" cy=\"12\" r=\"2\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"19\" cy=\"12\" r=\"2\" fill=\"currentColor\" stroke=\"none\"/></svg></button></div><div class=\"ds-card-body\"><h3 class=\"ds-card-title\">Example Game</h3><div><div class=\"ds-card-progress\"><span>124 / 658 found</span><span class=\"ds-card-pct\">19%</span></div><div class=\"ds-bar\"><div style=\"width:19%\"></div></div></div><ul class=\"ds-card-maps\"><li><div><div class=\"ds-card-map-name\">World</div><div class=\"ds-card-meta\">658 locations · offline tiles</div></div><button class=\"ds-card-open\">Open</button></li></ul><div class=\"ds-card-meta\">1 map · tiles 23 MB · screenshots 196 MB</div></div></article>",
+      "css": ".ds-card { width: 340px; background: var(--panel, #151b23); border: 1px solid var(--border, #242d38); border-radius: var(--radius, 12px); overflow: hidden; color: var(--text, #e8eef4); font: 14px/1.45 system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, sans-serif; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 1px 2px rgba(0, 0, 0, .35), 0 2px 8px rgba(0, 0, 0, .25); transition: transform .18s var(--ease, cubic-bezier(.2, .7, .2, 1)), box-shadow .18s var(--ease, cubic-bezier(.2, .7, .2, 1)), border-color .18s var(--ease, cubic-bezier(.2, .7, .2, 1)); } .ds-card:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 10px 30px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .35); border-color: var(--border-2, #323d4b); } .ds-card-hero { position: relative; height: 150px; background: radial-gradient(70% 90% at 50% 45%, rgba(94, 200, 255, .12), transparent 70%), linear-gradient(135deg, #1b2a3a, #10161e); border-bottom: 1px solid var(--border, #242d38); } .ds-card-more { position: absolute; right: 10px; top: 10px; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: rgba(11, 15, 20, .7); border: 1px solid rgba(255, 255, 255, .1); color: var(--text-2, #b9c4ce); cursor: pointer; transition: background .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), color .15s var(--ease, cubic-bezier(.2, .7, .2, 1)); } .ds-card-more:hover { background: var(--panel-3, #232c37); color: var(--text, #e8eef4); } .ds-card-body { padding: 14px 18px 16px; display: flex; flex-direction: column; gap: 14px; } .ds-card-title { margin: 0; font-size: 16px; font-weight: 650; line-height: 1.3; letter-spacing: -.012em; } .ds-card-progress { display: flex; justify-content: space-between; align-items: baseline; font-weight: 600; font-size: 13px; margin-bottom: 7px; font-variant-numeric: tabular-nums; } .ds-card-pct { color: var(--muted, #8794a2); font-weight: 500; } .ds-bar { height: 6px; background: var(--panel-3, #232c37); border-radius: 999px; overflow: hidden; box-shadow: inset 0 1px 1px rgba(0, 0, 0, .35); } .ds-bar > div { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--ok, #3ddc84), var(--accent, #5ec8ff)); } .ds-card-maps { list-style: none; margin: 0; padding: 0; } .ds-card-maps li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--border, #242d38); border-bottom: 1px solid var(--border, #242d38); } .ds-card-map-name { font-weight: 600; font-size: 13.5px; } .ds-card-meta { font-size: 12px; color: var(--muted, #8794a2); font-variant-numeric: tabular-nums; } .ds-card-open { height: 28px; padding: 0 10px; font: 500 12.5px/1 system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, sans-serif; border-radius: var(--radius-xs, 6px); background: var(--panel-2, #1b222c); border: 1px solid var(--border-2, #323d4b); color: var(--text, #e8eef4); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04); cursor: pointer; transition: background .15s var(--ease, cubic-bezier(.2, .7, .2, 1)); } .ds-card-open:hover { background: var(--panel-3, #232c37); } .ds-card-open:focus-visible { outline: 2px solid var(--accent, #5ec8ff); outline-offset: 2px; } .ds-card-more:focus-visible { outline: 2px solid var(--accent, #5ec8ff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Collect Button",
+      "kind": "custom",
+      "refersTo": "collect-toggle",
+      "description": "Full-width filled button at the foot of a location popup with its C key hint; Green Flag Soft once collected.",
+      "html": "<div class=\"ds-collect-pair\"><button class=\"ds-collect\">Mark as collected <kbd class=\"ds-collect-kbd\">C</kbd></button><button class=\"ds-collect ds-collect-done\"><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" style=\"stroke-width:2.8\"><path d=\"m5 12 5 5 9-10\"/></svg>Collected · click to undo</button></div>",
+      "css": ".ds-collect-pair { display: flex; flex-direction: column; gap: 8px; width: 260px; } .ds-collect { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 36px; border-radius: var(--radius-s, 8px); border: 1px solid var(--accent, #5ec8ff); background: var(--accent, #5ec8ff); color: var(--accent-ink, #06202e); font: 650 14px/1 system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, sans-serif; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 1px 2px rgba(0, 0, 0, .3); transition: filter .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), background .15s var(--ease, cubic-bezier(.2, .7, .2, 1)), color .15s var(--ease, cubic-bezier(.2, .7, .2, 1)); } .ds-collect:hover { filter: brightness(1.07); } .ds-collect-kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 5px; background: var(--panel-3, #232c37); border: 1px solid var(--border-2, #323d4b); box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .4); color: var(--text-2, #b9c4ce); font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: rgba(6, 32, 46, .16); border-color: transparent; box-shadow: none; color: inherit; } .ds-collect-done { border-color: rgba(61, 220, 132, .5); background: var(--ok-soft, rgba(61, 220, 132, .14)); color: var(--ok, #3ddc84); box-shadow: none; } .ds-collect-done:hover { background: rgba(61, 220, 132, .22); filter: none; } .ds-collect:focus-visible { outline: 2px solid var(--accent, #5ec8ff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Found Count",
+      "kind": "custom",
+      "refersTo": "version-tag",
+      "description": "The sidebar progress block: the 24px found count over the 6px bar, with the version in plain muted text.",
+      "html": "<div class=\"ds-progress\"><div class=\"ds-progress-row\"><span><strong>124</strong> / 658 found</span><span class=\"ds-progress-pct\">19%</span></div><div class=\"ds-bar2\"><div style=\"width:19%\"></div></div><div class=\"ds-version\">v2.7.1</div></div>",
+      "css": ".ds-progress { width: 296px; padding: 14px 16px 12px; background: var(--panel, #151b23); border-radius: var(--radius, 12px); font: 13px/1.45 system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, sans-serif; color: var(--text-2, #b9c4ce); } .ds-progress-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; font-variant-numeric: tabular-nums; } .ds-progress-row strong { font-size: 24px; line-height: 1; font-weight: 700; color: var(--text, #e8eef4); letter-spacing: -.02em; } .ds-progress-pct { font-weight: 600; color: var(--muted, #8794a2); } .ds-bar2 { height: 6px; background: var(--panel-3, #232c37); border-radius: 999px; overflow: hidden; box-shadow: inset 0 1px 1px rgba(0, 0, 0, .35); } .ds-bar2 > div { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--ok, #3ddc84), var(--accent, #5ec8ff)); } .ds-version { margin-top: 12px; text-align: right; color: var(--muted, #8794a2); font-size: 12px; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Marker Cluster",
+      "kind": "custom",
+      "refersTo": "cluster",
+      "description": "Nearby markers grouped on the map: a lit cyan sphere, Green Flag when all inside are collected; the collected-pin check badge.",
+      "html": "<span class=\"ds-clusters\"><span class=\"ds-cluster\">12</span><span class=\"ds-cluster ds-cluster-done\">5</span><span class=\"ds-pin-check\"></span></span>",
+      "css": ".ds-clusters { display: inline-flex; align-items: center; gap: 18px; padding: 12px 14px; background: #080b10; border-radius: var(--radius, 12px); } .ds-cluster { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #9fe0ff, #45b8f5 72%); color: var(--accent-ink, #06202e); font: 700 13px/1 system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, sans-serif; font-variant-numeric: tabular-nums; border: 2px solid rgba(255, 255, 255, .85); box-shadow: 0 2px 6px rgba(0, 0, 0, .55), 0 0 0 1px rgba(6, 32, 46, .35); cursor: pointer; transition: transform .15s var(--ease, cubic-bezier(.2, .7, .2, 1)); } .ds-cluster:hover { transform: scale(1.08); } .ds-cluster-done { background: radial-gradient(circle at 35% 30%, #a6f5c8, #2fd07e 72%); color: var(--ok-ink, #05210f); } .ds-pin-check { width: 16px; height: 16px; border-radius: 50%; background: var(--ok, #3ddc84) url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2305210f' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5 9-10'/%3E%3C/svg%3E\") center / 10px no-repeat; box-shadow: 0 1px 2px rgba(0, 0, 0, .7), 0 0 0 1.5px rgba(5, 33, 15, .6); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Pit Stop",
+    "overview": "The app is visited in seconds, mid-game: alt-tab in, read the state at a glance, mark something or find the\nnext collectible, and back to the game. Every visual decision serves that stop: dark, calm surfaces that don't\nglare after a dark game, state you can read without hunting (the big found count, the progress bar, collected\npins greyed out with a green check), keyboard hints right on the controls (`/`, `N`, `C`), and one color for\n\"act here\", with nothing in the chrome competing with the map.\n\nThe interface is a quiet set of dark slate layers. The color on screen belongs to the game: its map tiles,\nmarker icons and cover art. The app adds just three signals: **Pit-Lane Cyan** for the one thing to do or the\nthing in focus, **Green Flag** for done, and gold ★ for what counts toward progress. Surfaces have two heights:\ncards sit on the page with a faint shadow and a hairline of top light, and only things that float above it\n(popups, menus, the toast, the update banner) cast a real shadow. The map sidebar is dense and compact (328px,\n12–16px insets) because it sits beside the map. The Library is airier: a centred 1,120px column, headed\nsections, cover-topped game cards and a blurred sticky top bar.\n\nControls are **soft and friendly**: gently rounded corners (8px), pill-shaped chips, one drawn icon set with\nround strokes, and state changes that ease in over about 150ms (and switch off under reduced motion). Two looks\nare explicitly rejected: **a busy map website** (ads, banners, upsells, clutter around the map) and **a light,\nbright app** (white surfaces that glare when you alt-tab from a dark game).",
+    "keyCharacteristics": [
+      "Dark everywhere: page, panels, popups, menus, tooltips, map controls, select menus and scrollbars.",
+      "One accent (Pit-Lane Cyan) for action and focus; green means done and nothing else.",
+      "The game's art carries the color; the app's chrome stays neutral slate.",
+      "Readable at a glance: a 24px found count, tabular numbers, greyed collected pins, key hints on controls.",
+      "Soft, compact controls: 8px corners, pill chips, 34px standard height, one round-stroke icon set.",
+      "Two heights: resting surfaces with a faint lift, floating ones with a real shadow."
+    ],
+    "rules": [
+      {
+        "name": "The Pit-Lane Rule",
+        "body": "Pit-Lane Cyan marks the action or the focus: one primary button per area, the field you're typing in, the filter that's on. It never fills a panel or a large area.",
+        "section": "colors"
+      },
+      {
+        "name": "The Green Flag Rule",
+        "body": "Green means done, and only done: collected, finished, complete. Never use it for a generic \"success\" message or a call to action.",
+        "section": "colors"
+      },
+      {
+        "name": "The Game Owns the Color Rule",
+        "body": "The app's chrome stays in slate neutrals so the game's map, icons and covers are the most colorful things on screen. New color goes into the game's content, not the interface.",
+        "section": "colors"
+      },
+      {
+        "name": "The System Voice Rule",
+        "body": "One family, the OS's own UI font. Add hierarchy with weight (650 or 700) and size steps of a pixel or two; never with a display face. Monospace is for keys, paths and code, not decoration.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Count Rule",
+        "body": "Every number someone compares at a glance (counts, percentages, progress, sizes, the download log, the version) uses tabular numerals so columns don't jitter as values change.",
+        "section": "typography"
+      },
+      {
+        "name": "The Two Heights Rule",
+        "body": "A surface either rests (tone, hairline, Rest shadow and top light) or floats (Float shadow). There is no third, in-between elevation, and nothing at rest gets Float.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Soft Corner Rule",
+        "body": "Nothing interactive has square corners: 8px on controls, 6px on small ones, 12px on containers, a pill for anything that toggles or tags. The only square edges are full-width list rows in the sidebar.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "**Do** keep every surface dark: Night Asphalt (#0b0f14) for the page, Slate Panel (#151b23) for panels and popups, and Raised Slate (#1b222c) for controls and menus, including Leaflet's zoom bar, tooltips, select option menus and scrollbars.",
+      "**Do** use Pit-Lane Cyan (#5ec8ff) for one primary action per area and for every focus state (a 2px outline with a 2px offset; fields get the 3px focus ring).",
+      "**Do** show \"collected\" with Green Flag (#3ddc84) and a drawn check, and dim collected pins (grayscale, 55% opacity) instead of hiding them.",
+      "**Do** use tabular numerals for counts, percentages, progress, sizes and the version.",
+      "**Do** keep controls soft and friendly: 8px corners on buttons and fields, pills for chips, 150ms transitions on the shared ease.",
+      "**Do** draw every icon from the one round-stroke set through masks, and put key hints on the controls they trigger.",
+      "**Do** keep controls compact beside the map: 34px standard, 28px small, 26px chips, a 328px sidebar."
+    ],
+    "donts": [
+      "**Don't** add light themes, white panels or bright surfaces. The app must never feel like \"a light, bright app\" that glares after a dark game.",
+      "**Don't** surround the map with banners, promos, badges or decoration. It must never feel like \"a busy map website\"; the update banner appears only when there is an update and can be dismissed.",
+      "**Don't** use a map site's colors, logo or look anywhere in the app.",
+      "**Don't** introduce a second accent hue or a display typeface.",
+      "**Don't** use Unicode glyphs or emoji as icons.",
+      "**Don't** give a resting surface the Float shadow; Float is for floating things.",
+      "**Don't** use Green Flag for anything but done, or Danger Coral for anything but destructive actions and errors."
+    ]
+  }
+}

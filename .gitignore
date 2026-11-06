@@ -2,3 +2,5 @@ node_modules/
 dist/
 # Games placed next to the app for bundling (large: tiles + screenshots). Normally games live in the user-data folder.
 games/
+# Impeccable's local design-hook cache (per machine)
+.impeccable/hook.cache.json
