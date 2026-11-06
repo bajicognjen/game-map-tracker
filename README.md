@@ -156,6 +156,8 @@ bulk collect, a custom backups folder, the remembered window size, starting on t
 persistence across restarts, restoring
 from the backup file and deleting offline tiles. It needs a display;
 CI runs it on Linux (under `xvfb-run`), Windows and macOS on every push (`.github/workflows/ci.yml`).
+`GMT_E2E_WINDOW=1024x700 npm run test:e2e` runs the first pass in a window that size, like the small displays
+of the Windows and macOS runners.
 
 ## Layout
 
