@@ -25,6 +25,14 @@ const check = (name, ok, detail = '') => {
   if (!ok) failures++;
 };
 const launch = () => electron.launch({ executablePath: electronBin, args: [ROOT], env: { ...process.env, GMT_USER_DATA: userData }, timeout: 60000 });
+// GMT_E2E_WINDOW=1024x700 runs the first pass in a window that size, like the small displays of the Windows and
+// macOS CI runners (the later passes test the remembered window size, so they are left alone).
+const shrinkWindow = async (app) => {
+  const m = /^(\d+)x(\d+)$/.exec(process.env.GMT_E2E_WINDOW || '');
+  if (!m) return;
+  await app.firstWindow();
+  await app.evaluate(({ BrowserWindow }, [w, h]) => { const win = BrowserWindow.getAllWindows()[0]; win.unmaximize(); win.setSize(w, h); win.center(); }, [Number(m[1]), Number(m[2])]);
+};
 const attach = (page, issues, ignore = null) => {
   page.on('console', (m) => { if (['error', 'warning'].includes(m.type()) && !(ignore && ignore.test(m.text()))) issues.push(m.text()); });
   page.on('pageerror', (e) => issues.push(e.message));
@@ -47,10 +55,12 @@ const counts = (page) => page.evaluate(() => ({
   progress: document.getElementById('progress-text').textContent,
 }));
 
+let app = null;
 try {
   // ----- first run -----
   let issues = [];
-  let app = await launch();
+  app = await launch();
+  await shrinkWindow(app);
   let page = await app.firstWindow();
   attach(page, issues);
   await page.waitForSelector('#library:not(.hidden)', { timeout: 30000 });
@@ -166,9 +176,17 @@ try {
   await page.fill('#search', '');
   await page.waitForTimeout(300);
 
-  // custom marker via right-click on an empty spot
+  // custom marker via right-click on an empty spot. While a popup is open the pan limits are lifted and the map
+  // may have been panned to fit it (it is, in a small window), so close the popup and reset the view first: the
+  // home view shows the whole 512x512 fixture map at half scale, centred in the pane, so map (x, y) sits at
+  // centre + (x - 256, y - 256) / 2. Nothing is near (420, 100); the closest marker is Key of the north at (300, 200).
+  await page.evaluate(() => document.querySelector('.leaflet-popup-close-button')?.click());
+  await page.waitForTimeout(400);
+  await page.evaluate(() => document.querySelector('.mg-home').click());
+  await page.waitForTimeout(700);
   const box = await page.evaluate(() => { const r = document.getElementById('map').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
-  await page.mouse.click(box.x + box.w / 2 + 60, box.y + box.h / 2 - 90, { button: 'right' });
+  const spot = { x: box.x + box.w / 2 + (420 - 256) / 2, y: box.y + box.h / 2 + (100 - 256) / 2 };
+  await page.mouse.click(spot.x, spot.y, { button: 'right' });
   await page.waitForSelector('[data-add-custom]', { timeout: 10000 });
   await page.evaluate(() => document.querySelector('[data-add-custom]').click());
   await page.waitForSelector('[data-custom-title]', { timeout: 10000 });
@@ -289,9 +307,11 @@ try {
 } catch (err) {
   console.error(err);
   failures++;
+  // a failure mid-pass leaves the app running, and its open files would keep the temp folder from being removed
+  if (app) await app.close().catch(() => {});
 } finally {
-  // Windows can hold file locks for a moment after the app exits
-  fs.rmSync(userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
+  // Windows can hold file locks for a moment after the app exits; a leftover temp folder must not hide the result
+  try { fs.rmSync(userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 }); } catch (err) { console.warn(`could not remove ${userData}: ${err.message}`); }
 }
 console.log(failures ? `\n${failures} check(s) failed` : '\nAll checks passed');
 process.exit(failures ? 1 : 0);
