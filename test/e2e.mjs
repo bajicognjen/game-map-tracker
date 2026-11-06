@@ -160,6 +160,24 @@ try {
   const altBackups = path.join(userData, 'synced-backups');
   await page.evaluate((dir) => window.api.applySettings({ backupsDir: dir, move: true }), altBackups);
 
+  // keyboard path: result rows are buttons, Enter opens the location and moves focus into its popup, Escape brings it back
+  await page.fill('#search', 'chest one');
+  await page.waitForTimeout(400);
+  check('search results are buttons', await page.evaluate(() => document.querySelector('#search-results .result')?.tagName === 'BUTTON'));
+  await page.keyboard.press('ArrowDown');
+  check('ArrowDown moves from the search box to the first result', await page.evaluate(() => document.activeElement?.classList.contains('result')));
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('.mg-popup .pp-title', { timeout: 10000 });
+  await page.waitForTimeout(900);
+  check('the popup takes focus when it opens', await page.evaluate(() => document.activeElement?.classList.contains('pp-title')));
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(400);
+  check('Escape closes the popup and returns focus to the result', await page.evaluate(() => !document.querySelector('.mg-popup') && document.activeElement?.classList.contains('result')));
+  check('tracking stars expose their state', await page.evaluate(() => document.querySelector('[data-track="101"]')?.getAttribute('aria-pressed') === 'true'));
+  check('cluster icons and pins are not tab stops', await page.evaluate(() => !document.querySelector('#map [tabindex="0"]:not(.leaflet-container)')));
+  await page.fill('#search', '');
+  await page.waitForTimeout(300);
+
   // popup, collect, note
   await page.fill('#search', 'chest one');
   await page.waitForTimeout(400);

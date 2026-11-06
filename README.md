@@ -88,8 +88,10 @@ then fetches screenshots for anything new. The window size and position are reme
   category, with a jump on click, *mark all* per region, and Copy / Save for a plain-text checklist.
 - **Titles** next to the pins appear when zoomed in close; the chip turns them off.
 - Your own markers can be dragged to a new spot.
-- Keyboard: `/` focuses search, `N` jumps to the next uncollected marker, `C` collects the marker whose popup
-  is open, `Esc` closes it.
+- Keyboard: `/` focuses search, arrow keys walk the search results and the what's-left list, Enter opens a
+  location and moves focus into its popup, `Esc` brings it back, `N` jumps to the next uncollected marker,
+  `C` collects the marker whose popup is open. "Skip to the map" (the first Tab stop on the map screen) jumps
+  past the sidebar.
 - Nearby markers are grouped into **clusters** at lower zooms (green when everything in them is collected);
   click a cluster to zoom in, or untick "Cluster nearby markers" to see every pin.
 - Category checkboxes filter the map; group checkboxes toggle a whole group. "Hide collected" hides what you have found.

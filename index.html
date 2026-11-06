@@ -106,6 +106,7 @@
   <!-- ===== Map view ===== -->
   <section id="mapscreen" class="screen hidden">
     <aside id="sidebar">
+      <button type="button" id="skip-to-map" class="skip-link">Skip to the map</button>
       <header class="sidebar-header">
         <div class="row between">
           <button type="button" id="back-library" class="link back"><span class="ico ico-back" aria-hidden="true"></span>Library</button>
@@ -117,7 +118,7 @@
 
       <section class="progress">
         <div class="progress-row">
-          <span id="progress-text">0 / 0 found</span>
+          <span id="progress-text" aria-live="polite" aria-atomic="true">0 / 0 found</span>
           <span id="progress-pct" class="muted">0%</span>
         </div>
         <div class="progress-bar"><div id="progress-fill"></div></div>
@@ -140,7 +141,7 @@
           <button type="button" id="next-uncollected" class="btn small-btn" title="Jump to the nearest uncollected marker (N)">Next uncollected <kbd aria-hidden="true">N</kbd></button>
         </div>
         <div class="row between small muted list-tools">
-          <span id="visible-count"></span>
+          <span id="visible-count" aria-live="polite"></span>
           <span><button type="button" id="whats-left" class="link" title="Everything still to collect, by region">What's left</button> · <button type="button" id="show-all" class="link">Show all</button> · <button type="button" id="hide-all" class="link">Hide all</button></span>
         </div>
       </section>

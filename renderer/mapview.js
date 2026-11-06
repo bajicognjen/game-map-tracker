@@ -101,7 +101,14 @@ window.MapView = (() => {
       if (!view || e.ctrlKey || e.metaKey || e.altKey) return;
       const tag = (e.target && e.target.tagName) || '';
       const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable);
-      if (e.key === 'Escape') { if (typing) e.target.blur(); else view.closePopup(); return; }
+      if (e.key === 'Escape') {
+        if (!typing) { view.closePopup(); return; }
+        const popup = e.target.closest('.leaflet-popup');
+        const title = popup && popup.querySelector('.pp-title');
+        e.target.blur();
+        if (title) title.focus({ preventScroll: true }); // leaving a popup's field lands on its title; Escape again closes it
+        return;
+      }
       if (typing) return;
       if (e.key === 'n' || e.key === 'N') { e.preventDefault(); view.nextUncollected(); }
       else if (e.key === '/') { e.preventDefault(); el.search.focus(); el.search.select(); }
@@ -112,7 +119,22 @@ window.MapView = (() => {
       if (!view) return;
       if (e.key === 'Enter') { e.preventDefault(); view.focusFirstResult(); }
       if (e.key === 'Escape') { el.search.value = ''; view.setSearch(''); }
+      if (e.key === 'ArrowDown') { const first = el.results.querySelector('button[data-id]'); if (first) { e.preventDefault(); first.focus(); } }
     });
+    // The result and what's-left rows are buttons (Enter opens the location); arrow keys walk them.
+    const walkList = (panel) => panel.addEventListener('keydown', (e) => {
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return;
+      const rows = [...panel.querySelectorAll('button[data-id]')];
+      const i = rows.indexOf(document.activeElement);
+      if (i < 0) return;
+      e.preventDefault();
+      const next = e.key === 'Home' ? 0 : e.key === 'End' ? rows.length - 1 : e.key === 'ArrowDown' ? Math.min(i + 1, rows.length - 1) : i - 1;
+      if (next < 0) { if (panel === el.results) { el.search.focus(); el.search.select(); } return; } // up from the first result: back to the search box
+      rows[next].focus();
+    });
+    walkList(el.results);
+    walkList(el.leftPanel);
+    document.getElementById('skip-to-map').addEventListener('click', () => el.map.focus({ preventScroll: true }));
     el.results.addEventListener('click', (e) => {
       const item = e.target.closest('[data-id]');
       if (item && view) view.focus(item.dataset.id);
@@ -393,7 +415,7 @@ window.MapView = (() => {
           m.x = Math.round(ll.lng);
           m.y = Math.round(ll.lat);
           persist.custom();
-          if (marker.isPopupOpen()) marker.getPopup().setContent(popupHtml(m));
+          if (marker.isPopupOpen()) { marker.getPopup().setContent(popupHtml(m)); focusInPopup(marker.getPopup(), true); }
         });
       }
       markerIds.set(marker, m.id);
@@ -418,6 +440,7 @@ window.MapView = (() => {
           zoomToBoundsOnClick: true,
           chunkedLoading: true,
           iconCreateFunction: (cluster) => {
+            cluster.options.keyboard = false; // like the pins: locations are reached through the lists and N, not by tabbing across the map
             const children = cluster.getAllChildMarkers();
             let done = 0;
             for (const c of children) if (isCollected(markerIds.get(c))) done++;
@@ -533,7 +556,7 @@ window.MapView = (() => {
     }
     function refreshEntry(entry) {
       entry.marker.setIcon(iconFor(entry.category, isCollected(entry.data.id)));
-      if (entry.marker.isPopupOpen()) entry.marker.getPopup().setContent(popupHtml(entry.data));
+      if (entry.marker.isPopupOpen()) { entry.marker.getPopup().setContent(popupHtml(entry.data)); focusInPopup(entry.marker.getPopup(), true); }
       if (group.refreshClusters && onMap.has(entry) && !isCustomEntry(entry)) group.refreshClusters(entry.marker);
     }
     function toggleCollected(id) {
@@ -651,7 +674,7 @@ window.MapView = (() => {
           const head = e.category.id !== lastCat ? `<li class="left-cat">${esc(e.category.title)}</li>` : '';
           lastCat = e.category.id;
           const sub = (state.notes[e.data.id] || e.data.description || '').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\*\*?/g, '').replace(/\s+/g, ' ').trim().slice(0, 80);
-          return `${head}<li class="left-item" data-id="${esc(e.data.id)}"><span class="left-text"><span class="left-title">${esc(e.data.title)}</span>${sub ? `<span class="left-sub">${esc(sub)}</span>` : ''}</span>${state.notes[e.data.id] ? '<span class="ico ico-note muted" title="has a note"></span>' : ''}</li>`;
+          return `${head}<li><button type="button" class="left-item" data-id="${esc(e.data.id)}"><span class="left-text"><span class="left-title">${esc(e.data.title)}</span>${sub ? `<span class="left-sub">${esc(sub)}</span>` : ''}</span>${state.notes[e.data.id] ? '<span class="ico ico-note muted" title="has a note"></span>' : ''}</button></li>`;
         }).join('');
         return `
           <section class="left-region">
@@ -713,11 +736,11 @@ window.MapView = (() => {
       const items = matches.slice(0, RESULT_LIMIT).map((e) => {
         const r = regionsById.get(e.data.regionId);
         const done = isCollected(e.data.id);
-        return `<li class="result${done ? ' done' : ''}" data-id="${esc(e.data.id)}">
+        return `<li><button type="button" class="result${done ? ' done' : ''}" data-id="${esc(e.data.id)}">
           ${smallIcon(e.category)}
           <span class="result-text"><span class="result-title">${esc(e.data.title || 'My marker')}</span><span class="result-meta">${esc(e.category.title)}${r ? ` · ${esc(r.title)}` : ''}${state.notes[e.data.id] ? ' · has a note' : ''}</span></span>
           ${done ? '<span class="result-check ico ico-check" title="collected"></span>' : ''}
-        </li>`;
+        </button></li>`;
       }).join('');
       el.results.innerHTML = `<div class="results-head">${matches.length} match${matches.length === 1 ? '' : 'es'}${matches.length > RESULT_LIMIT ? ` · showing the first ${RESULT_LIMIT}` : ''} · Enter jumps to the first</div><ul>${items}</ul>`;
       syncPanels();
@@ -727,7 +750,7 @@ window.MapView = (() => {
     const mediaSrc = (media) => (localMedia.has(media.file) ? `${mapBase}/media/${media.file}` : media.url);
     function popupHtml(m) {
       const collected = isCollected(m.id);
-      const toggle = `<button type="button" class="pp-toggle${collected ? ' done' : ''}" data-toggle="${esc(m.id)}">${collected ? '<span class="ico ico-check" aria-hidden="true"></span>Collected · click to undo' : 'Mark as collected'}</button>`;
+      const toggle = `<button type="button" class="pp-toggle${collected ? ' done' : ''}" data-toggle="${esc(m.id)}">${collected ? '<span class="ico ico-check" aria-hidden="true"></span>Collected · click to undo' : 'Mark as collected <kbd aria-hidden="true">C</kbd>'}</button>`;
       if (m.categoryId === CUSTOM) {
         return `
           <div class="pp pp-custom">
@@ -744,22 +767,51 @@ window.MapView = (() => {
       const media = m.media[0];
       return `
         <div class="pp">
-          <h3 class="pp-title">${esc(m.title)}</h3>
+          <h3 class="pp-title" tabindex="-1">${esc(m.title)}</h3>
           <div class="pp-head">
             <span class="pp-cat" style="color:${(g && g.color) || '#9aa'}">${esc(c.title)}</span>
             ${r ? `<span class="pp-sep">·</span><span class="pp-region">${esc(r.title)}</span>` : ''}
           </div>
           ${m.description ? `<div class="pp-desc">${md(m.description)}</div>` : ''}
           ${!m.description && c.info ? `<div class="pp-desc muted">${md(c.info)}</div>` : ''}
-          ${media ? `<div class="pp-media${media.spoiler ? ' spoiler' : ''}"><img src="${esc(mediaSrc(media))}" alt="" loading="lazy"></div>` : ''}
+          ${media ? `<div class="pp-media${media.spoiler ? ' spoiler' : ''}"><img src="${esc(mediaSrc(media))}" alt="Screenshot of ${esc(m.title)}" loading="lazy"></div>` : ''}
           <textarea class="pp-notes" data-note="${m.id}" placeholder="Your notes…" rows="2">${esc(state.notes[m.id] || '')}</textarea>
           ${toggle}
           <div class="pp-meta">${collected ? `Found ${esc(fmtDate(state.collected[m.id]))} · ` : ''}#${m.id} · x ${Math.round(m.x)}, y ${Math.round(m.y)}</div>
         </div>`;
     }
     let openPopup = null;
-    map.on('popupopen', (e) => { openPopup = e.popup; });
-    map.on('popupclose', (e) => { delete e.popup._relaidOut; openPopup = null; });
+    let focusReturn = null; // the list row (by location id) that opened the popup, so Escape can hand focus back to it
+    map.on('popupopen', (e) => {
+      openPopup = e.popup;
+      const from = document.activeElement;
+      focusReturn = from && from.dataset && from.dataset.id !== undefined ? from.dataset.id : null;
+      focusInPopup(e.popup, false);
+    });
+    // Focus lives on the popup's title (or its one input or button), so keyboard and screen-reader users land on
+    // what just opened. Re-rendering the content replaces that node and drops focus to the body, so after every
+    // re-render it is put back, but only when it was in the popup: a click elsewhere keeps its own focus.
+    function focusInPopup(popup, onlyIfLost) {
+      const node = popup && popup.getElement && popup.getElement();
+      const target = node && node.querySelector('.pp-title, .pp-input, [data-add-custom]');
+      if (!target) return;
+      const active = document.activeElement;
+      if (onlyIfLost && active && active !== document.body && !el.map.contains(active)) return;
+      target.focus({ preventScroll: true });
+    }
+    map.on('popupclose', (e) => {
+      delete e.popup._relaidOut;
+      openPopup = null;
+      const id = focusReturn;
+      focusReturn = null;
+      if (!alive) return;
+      // Hand focus back only when it was still inside the popup (or lost with it); a click elsewhere keeps its own focus.
+      const active = document.activeElement;
+      if (active && active !== document.body && !el.map.contains(active)) return;
+      const sel = id !== null ? `button[data-id="${CSS.escape(String(id))}"]` : null;
+      const row = sel && (el.results.querySelector(sel) || el.leftPanel.querySelector(sel));
+      (row || el.map).focus({ preventScroll: true });
+    });
     // A popup near the map's edge needs room the pan limits don't allow (most of all in a small window),
     // so they are lifted while a popup is open and the map eases back inside them once it closes.
     map.on('popupopen', () => map.setMaxBounds(null));
@@ -774,7 +826,7 @@ window.MapView = (() => {
             ${smallIcon(c)}
             <span class="cat-title" title="${esc(c.info || c.title)}">${esc(c.title)}</span>
           </label>
-          <button type="button" class="track${isTracked(c.id) ? ' on' : ''}" data-track="${c.id}" title="${isTracked(c.id) ? 'Counts toward progress — click to leave it out' : 'Not counted toward progress — click to count it'}"><span class="ico ico-star" aria-hidden="true"></span></button>
+          <button type="button" class="track${isTracked(c.id) ? ' on' : ''}" data-track="${c.id}" aria-pressed="${isTracked(c.id)}" aria-label="Count ${esc(c.title)} toward progress" title="${isTracked(c.id) ? 'Counts toward progress — click to leave it out' : 'Not counted toward progress — click to count it'}"><span class="ico ico-star" aria-hidden="true"></span></button>
           <span class="count" data-cat-count="${c.id}"></span>
         </li>`;
     }
@@ -783,6 +835,7 @@ window.MapView = (() => {
       for (const b of el.categories.querySelectorAll('[data-track]')) {
         const on = isTracked(Number(b.dataset.track));
         b.classList.toggle('on', on);
+        b.setAttribute('aria-pressed', String(on));
         b.title = on ? 'Counts toward progress — click to leave it out' : 'Not counted toward progress — click to count it';
       }
     }
@@ -982,6 +1035,7 @@ window.MapView = (() => {
         if (!openPopup || openPopup._relaidOut || e.target.tagName !== 'IMG' || !e.target.closest('.pp-media')) return;
         openPopup._relaidOut = true;
         openPopup.update();
+        focusInPopup(openPopup, true);
       },
       async exportProgress() {
         const payload = { app: 'game-map-tracker', game: gameSlug, map: mapSlug, mapId: data.map.id, exportedAt: new Date().toISOString(), collected: state.collected, notes: state.notes, custom: state.custom };
